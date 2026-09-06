@@ -2,7 +2,7 @@
 
 Date: 2026-09-06
 Version: 0.1.58
-Status: Approved design, pending written-spec review
+Status: Approved for implementation
 
 ## Objective
 
@@ -14,6 +14,8 @@ distribution paths from one verified package:
 
 Both paths must preserve the existing interactive selector, command-line flags,
 target paths, atomic replacement, backups, and legacy Codex detection.
+After the first npm publication establishes package ownership, configure GitHub
+Actions as the trusted npm publisher for future releases.
 
 ## Decisions
 
@@ -25,12 +27,19 @@ target paths, atomic replacement, backups, and legacy Codex detection.
 - Publish no runtime dependencies and no npm lifecycle scripts.
 - Build npm and GitHub artifacts from one explicit file allowlist.
 - Publish the first npm release from an authenticated maintainer account.
-- Defer npm trusted publishing through GitHub Actions until package ownership is
-  established.
+- Add `.github/workflows/publish.yml` before the first publication.
+- Configure that workflow as the trusted publisher after `quorum-skill@0.1.58`
+  establishes package ownership.
+- Use OIDC trusted publishing without an npm token for subsequent releases.
+- Let npm generate provenance attestations automatically for trusted publishes.
 
 The name `quorum` is already registered on npm. `quorum-skill` appeared
 unregistered during design, but the release process must confirm availability
 again immediately before publication.
+
+The first, locally authenticated publication of `0.1.58` cannot receive trusted
+publishing provenance retroactively. Releases after trust is configured publish
+through GitHub Actions and receive npm's automatic provenance attestations.
 
 ## User experience
 
@@ -152,6 +161,19 @@ location, so running from npm's cache needs no special path mode.
 The POSIX and PowerShell launchers remain manual-archive entry points. Both
 continue to forward all arguments and the installer's exit status.
 
+### Trusted publishing workflow
+
+Add `.github/workflows/publish.yml` with manual dispatch and an exact version
+input. It runs only from `main` on GitHub-hosted Ubuntu, uses Node.js 24, and
+ensures npm `11.15.0` or later. The job grants only `contents: read` and
+`id-token: write`, runs tests, builds the distribution, publishes the generated
+tarball, and uploads the matching distribution files as a workflow artifact.
+
+The workflow contains no `NODE_AUTH_TOKEN` and reads no npm secret. After
+`quorum-skill@0.1.58` exists, configure npm trust for GitHub repository
+`GTuritto/quorum`, workflow filename `publish.yml`, and direct `npm publish`
+permission. The npm account must have 2FA enabled for this configuration step.
+
 ## Installation data flow
 
 ```text
@@ -183,6 +205,10 @@ artifact retrieval; Quorum owns only local validation and installation.
 - `SHA256SUMS` protects manual archive verification.
 - The release process builds once, publishes that `.tgz` to npm, and uploads the
   same `.tgz` to GitHub.
+- Trusted publishing uses a short-lived GitHub OIDC identity and stores no npm
+  publish token in GitHub.
+- Trusted publishes from the public GitHub repository receive npm provenance
+  and publish attestations automatically.
 - A credential scan runs against tracked files and distribution artifacts.
 - The existing dry-run, confirmation, backup, rollback, and partial-failure
   behavior remains unchanged.
@@ -198,6 +224,10 @@ channel.
   name. Do not rename the package automatically.
 - If npm authentication or two-factor authentication is missing, stop before
   publication and ask the maintainer to complete it.
+- If npm `11.15.0` or later is unavailable for trust configuration, stop before
+  configuring the publisher.
+- If the trusted-publisher repository or workflow identity differs from
+  `GTuritto/quorum` and `publish.yml`, stop without accepting the configuration.
 - If packaging includes an unexpected or missing file, stop before publication.
 - If versions differ, stop before building artifacts.
 - If tests, local tarball execution, checksum verification, or credential scans
@@ -223,13 +253,16 @@ different contents.
 8. Publish the existing `.tgz` as public `quorum-skill@0.1.58`.
 9. Verify npm metadata and run a version-pinned command from a clean npm cache
    outside the repository.
-10. Create and push annotated tag `v0.1.58` at the verified commit.
-11. Create draft GitHub release `v0.1.58` and upload the existing `.tgz`, ZIP,
+10. Configure `publish.yml` as the trusted GitHub publisher with direct publish
+    permission, then verify the stored trust relationship.
+11. Create and push annotated tag `v0.1.58` at the verified commit.
+12. Create draft GitHub release `v0.1.58` and upload the existing `.tgz`, ZIP,
     and `SHA256SUMS`.
-12. Download or stream each remote asset and compare its digest with the local
+13. Download or stream each remote asset and compare its digest with the local
     checksum file.
-13. Publish the verified GitHub release.
-14. Verify the README commands, npm package page, GitHub tag, and release URLs.
+14. Publish the verified GitHub release.
+15. Verify the README commands, npm package page, GitHub tag, release URLs,
+    GitHub workflow identity, and npm trust relationship.
 
 The release process never changes `v0.1.57` or republishes its assets.
 
@@ -263,6 +296,12 @@ The release process never changes `v0.1.57` or republishes its assets.
 - GitHub release assets match `SHA256SUMS`.
 - The `v0.1.58` tag and npm package repository metadata resolve to the verified
   commit and repository.
+- `.github/workflows/publish.yml` has only `contents: read` and `id-token: write`
+  permissions and contains no npm token reference.
+- `npm trust list quorum-skill` identifies `GTuritto/quorum` and `publish.yml`
+  with direct publish permission.
+- The first trusted release after `0.1.58` exposes npm provenance and publish
+  attestations linked to the GitHub workflow and source commit.
 
 ## Documentation changes
 
@@ -274,12 +313,11 @@ and safety documentation.
 `CONTRIBUTING.md` documents the package-content test and distribution build.
 `SECURITY.md` adds npm-package and release-asset integrity to its scope.
 `CHANGELOG.md` records the `0.1.58` distribution changes.
+`PUBLISHING.md` documents the first-publication exception and the trusted
+publishing workflow for later releases.
 
 ## Deferred work
 
-- Configure npm trusted publishing through GitHub Actions after the first
-  package establishes ownership.
-- Add provenance attestations when trusted publishing is configured.
 - Add other package registries only after demand justifies another release
   channel.
 - Add native executables only if requiring Node.js becomes a material adoption
@@ -292,6 +330,9 @@ and safety documentation.
 - A user can install from compact GitHub release assets without downloading the
   repository source archive.
 - npm and GitHub publish the same verified package contents for `0.1.58`.
+- npm trusts `GTuritto/quorum` workflow `publish.yml` for later direct publishes
+  without a long-lived token.
+- Subsequent trusted publishes receive npm provenance automatically.
 - The package contains no unexpected repository, test, or credential files.
 - Existing installer behavior and tests remain intact.
 - Existing Quorum installations and release `v0.1.57` remain unchanged.

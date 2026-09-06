@@ -44,11 +44,6 @@ jobs:
 
       - run: npm run dist
 
-      - name: Publish through npm trusted publishing
-        env:
-          RELEASE_VERSION: ${{ inputs.version }}
-        run: npm publish "dist/quorum-skill-${RELEASE_VERSION}.tgz" --access public
-
       - uses: actions/upload-artifact@v4
         with:
           name: quorum-skill-${{ inputs.version }}
@@ -58,3 +53,8 @@ jobs:
             dist/SHA256SUMS
           if-no-files-found: error
           retention-days: 7
+
+      - name: Publish through npm trusted publishing
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: npm publish "dist/quorum-skill-${RELEASE_VERSION}.tgz" --access public

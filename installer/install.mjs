@@ -14,7 +14,6 @@ import {
 } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { createInterface } from "node:readline/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { formatBanner, runSelector } from "./selector.mjs";
@@ -212,6 +211,7 @@ async function availableBackupPath(destination, now) {
 
 async function defaultConfirm(destination, { input, output }) {
   if (!input.isTTY || !output.isTTY) return false;
+  const { createInterface } = await import("node:readline/promises");
   const prompt = createInterface({ input, output });
   try {
     const answer = await prompt.question(`Replace the existing installation at ${destination}? [y/N] `);

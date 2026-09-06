@@ -69,9 +69,9 @@ Download `quorum-skill-0.1.58.tgz` or `quorum-skill-0.1.58.zip` and
 On macOS or Linux:
 
 ```sh
-grep 'quorum-skill-0.1.58.tgz' SHA256SUMS | shasum -a 256 -c -
-tar -xzf quorum-skill-0.1.58.tgz
-cd package
+grep 'quorum-skill-0.1.58.tgz' SHA256SUMS | shasum -a 256 -c - &&
+tar -xzf quorum-skill-0.1.58.tgz &&
+cd package &&
 ./install.sh
 ```
 

@@ -27,6 +27,7 @@ investigate and prepare a coordinated fix before public disclosure.
 
 ## Scope
 
-Relevant reports include installer path handling, unsafe replacement or backup
-behavior, terminal-state handling, payload integrity, and prompt instructions
-that could expand permissions or misrepresent model provenance.
+Relevant reports include npm package contents, executable shims, release assets
+and checksums, installer path handling, unsafe replacement or backup behavior,
+terminal-state handling, payload integrity, and prompt instructions that could
+expand permissions or misrepresent model provenance.

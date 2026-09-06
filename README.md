@@ -7,7 +7,7 @@
 | |_| || |_| || |_| ||  _ < | |_| || |  | |
  \__\_\ \___/  \___/ |_| \_\ \___/ |_|  |_|
 
-                    QUORUM v0.1.57
+                    QUORUM v0.1.58
 ```
 
 An adaptive multi-perspective reasoning skill for AI coding agents.
@@ -39,21 +39,55 @@ The installer has no third-party package dependencies.
 
 ## Install
 
-Clone the repository and run the launcher for your platform:
+Run Quorum directly from npm:
 
 ```sh
-git clone https://github.com/GTuritto/quorum.git
-cd quorum
+npx quorum-skill
+```
+
+Pin the exact release when reproducibility matters:
+
+```sh
+npx quorum-skill@0.1.58
+```
+
+`npx` may ask before downloading an uncached package. Put `-y` before the
+package name to suppress that npm prompt:
+
+```sh
+npx -y quorum-skill@0.1.58 --all --dry-run
+```
+
+This does not suppress Quorum's replacement confirmation. Pass Quorum's
+`--yes` option separately only when you intend to replace differing content.
+
+### Manual archive installation
+
+Download `quorum-skill-0.1.58.tgz` or `quorum-skill-0.1.58.zip` and
+`SHA256SUMS` from the [v0.1.58 release](https://github.com/GTuritto/quorum/releases/tag/v0.1.58).
+
+On macOS or Linux:
+
+```sh
+grep 'quorum-skill-0.1.58.tgz' SHA256SUMS | shasum -a 256 -c -
+tar -xzf quorum-skill-0.1.58.tgz
+cd package
 ./install.sh
 ```
 
 On Windows PowerShell:
 
 ```powershell
-git clone https://github.com/GTuritto/quorum.git
-Set-Location quorum
+$expected = (Select-String "quorum-skill-0.1.58.zip" SHA256SUMS).Line.Split()[0]
+$actual = (Get-FileHash quorum-skill-0.1.58.zip -Algorithm SHA256).Hash.ToLower()
+if ($actual -ne $expected) { throw "Checksum verification failed" }
+Expand-Archive quorum-skill-0.1.58.zip -DestinationPath .
+Set-Location .\quorum-skill-0.1.58
 .\install.ps1
 ```
+
+The compact assets contain the installer and skill payload. GitHub's source
+archives contain the complete development repository.
 
 With no target flags, the installer opens this selector:
 
@@ -76,25 +110,25 @@ Use Up/Down to move, Space or a primary mouse click to toggle, Enter to confirm,
 Install for every supported assistant at user scope:
 
 ```sh
-./install.sh --all --yes
+npx quorum-skill --all --yes
 ```
 
 Install only Codex, Claude Code, and Cursor:
 
 ```sh
-./install.sh --targets codex,claude,cursor
+npx quorum-skill --targets codex,claude,cursor
 ```
 
 Preview a project-local installation without writing:
 
 ```sh
-./install.sh --targets codex,cursor --scope project --dry-run
+npx quorum-skill --targets codex,cursor --scope project --dry-run
 ```
 
 Install into an explicit project:
 
 ```sh
-./install.sh --all --project-root /path/to/project --yes
+npx quorum-skill --all --project-root /path/to/project --yes
 ```
 
 `--targets` and `--all` skip the interactive selector.

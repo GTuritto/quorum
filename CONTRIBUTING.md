@@ -38,10 +38,13 @@ installation step is required.
 
 ```sh
 npm test
+npm run dist
 git diff --check
 ```
 
-`npm test` includes Quorum's portable structural and version checks.
+`npm test` includes Quorum's portable structural and version checks. `npm run
+dist` verifies the exact npm packlist before producing the compact release
+archives and `SHA256SUMS` in `dist/`.
 
 ## Commit and pull request guidance
 

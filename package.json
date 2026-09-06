@@ -1,0 +1,14 @@
+{
+  "name": "quorum-agent-skill",
+  "version": "0.1.57",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs && sh tests/test-install.sh",
+    "test:unit": "node --test tests/*.test.mjs",
+    "test:integration": "sh tests/test-install.sh"
+  }
+}

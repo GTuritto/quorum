@@ -1,6 +1,8 @@
 ---
 name: quorum
 description: Use for difficult, ambiguous, consequential, or persistent decisions that benefit from adaptive multi-perspective analysis, isolated divergence, anonymous review, and concise synthesis. Skip ordinary factual or low-stakes requests, and honor a leading `Direct:` bypass.
+metadata:
+  version: "0.1.57"
 ---
 
 # Quorum

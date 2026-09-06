@@ -987,8 +987,12 @@ test("trusted publish workflow uses constrained GitHub OIDC", async () => {
   assert.match(workflow, /npm@\^11\.15\.0/);
   assert.match(workflow, /npm test/);
   assert.match(workflow, /npm run dist/);
-  assert.match(workflow, /npm publish "dist\/quorum-skill-\$\{RELEASE_VERSION\}\.tgz" --access public/);
+  assert.match(workflow, /npm publish "\.\/dist\/quorum-skill-\$\{RELEASE_VERSION\}\.tgz" --access public/);
   assert.match(workflow, /actions\/upload-artifact@v4/);
+  assert.ok(
+    workflow.indexOf("actions/upload-artifact@v4") < workflow.indexOf("npm publish"),
+    "verified artifacts must be preserved before the immutable npm publish",
+  );
   assert.doesNotMatch(workflow, /NODE_AUTH_TOKEN|NPM_TOKEN|secrets\./);
 });
 ```
@@ -1054,11 +1058,6 @@ jobs:
 
       - run: npm run dist
 
-      - name: Publish through npm trusted publishing
-        env:
-          RELEASE_VERSION: ${{ inputs.version }}
-        run: npm publish "dist/quorum-skill-${RELEASE_VERSION}.tgz" --access public
-
       - uses: actions/upload-artifact@v4
         with:
           name: quorum-skill-${{ inputs.version }}
@@ -1068,6 +1067,11 @@ jobs:
             dist/SHA256SUMS
           if-no-files-found: error
           retention-days: 7
+
+      - name: Publish through npm trusted publishing
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: npm publish "./dist/quorum-skill-${RELEASE_VERSION}.tgz" --access public
 ```
 
 Do not add `NODE_AUTH_TOKEN`, `NPM_TOKEN`, an npm secret, or broader repository
@@ -1194,7 +1198,7 @@ an unexpected owner, stop and request a new package-name decision.
 After the authentication gate passes, run:
 
 ```sh
-npm publish dist/quorum-skill-0.1.58.tgz --access public
+npm publish ./dist/quorum-skill-0.1.58.tgz --access public
 ```
 
 Expected: npm reports `+ quorum-skill@0.1.58`. Do not rebuild after this point.

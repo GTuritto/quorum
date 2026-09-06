@@ -57,4 +57,4 @@ jobs:
       - name: Publish through npm trusted publishing
         env:
           RELEASE_VERSION: ${{ inputs.version }}
-        run: npm publish "dist/quorum-skill-${RELEASE_VERSION}.tgz" --access public
+        run: npm publish "./dist/quorum-skill-${RELEASE_VERSION}.tgz" --access public

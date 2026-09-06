@@ -1,0 +1,60 @@
+name: Publish npm package
+
+"on":
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Exact package version to publish
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: npm-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      - name: Use an npm CLI that supports trusted publishing
+        run: npm install --global npm@^11.15.0
+
+      - name: Verify requested version
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          package_version=$(node -p "require('./package.json').version")
+          test "$package_version" = "$RELEASE_VERSION"
+
+      - run: npm test
+
+      - run: npm run dist
+
+      - name: Publish through npm trusted publishing
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: npm publish "dist/quorum-skill-${RELEASE_VERSION}.tgz" --access public
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: quorum-skill-${{ inputs.version }}
+          path: |
+            dist/quorum-skill-${{ inputs.version }}.tgz
+            dist/quorum-skill-${{ inputs.version }}.zip
+            dist/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 7

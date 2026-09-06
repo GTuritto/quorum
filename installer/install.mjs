@@ -23,6 +23,13 @@ const SOURCE_ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const COMMON_PAYLOAD = ["SKILL.md", "VERSION", "references"];
 const CODEX_PAYLOAD = [path.join("agents", "openai.yaml")];
 
+export function assertSupportedNode(version) {
+  const major = Number.parseInt(String(version).split(".")[0], 10);
+  if (!Number.isInteger(major) || major < 18) {
+    throw new Error(`Quorum requires Node.js 18 or later; found ${version}`);
+  }
+}
+
 export function parseArguments(argv) {
   const options = {
     targetIds: null,
@@ -75,7 +82,9 @@ export function parseArguments(argv) {
 }
 
 export function helpText() {
-  return `Usage: ./install.sh [options]
+  return `Usage:
+  quorum-skill [options]
+  ./install.sh [options]
 
 Without --targets or --all, Quorum opens an interactive target selector.
 
@@ -333,8 +342,10 @@ export async function main({
   output = process.stdout,
   errorOutput = process.stderr,
   sourceRoot = SOURCE_ROOT,
+  nodeVersion = process.versions.node,
 } = {}) {
   try {
+    assertSupportedNode(nodeVersion);
     const options = parseArguments(argv);
     const source = await validateSource(sourceRoot);
     output.write(`${formatBanner(source.version)}\n`);

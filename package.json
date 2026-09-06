@@ -1,10 +1,13 @@
 {
-  "name": "quorum-agent-skill",
-  "version": "0.1.57",
+  "name": "quorum-skill",
+  "version": "0.1.58",
   "description": "Adaptive multi-perspective reasoning skill for AI coding agents.",
-  "private": true,
   "type": "module",
   "license": "MIT",
+  "author": {
+    "name": "Giuseppe Turitto",
+    "email": "giuseppe@turitto.com"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/GTuritto/quorum.git"
@@ -12,6 +15,24 @@
   "homepage": "https://github.com/GTuritto/quorum#readme",
   "bugs": {
     "url": "https://github.com/GTuritto/quorum/issues"
+  },
+  "bin": {
+    "quorum-skill": "installer/install.mjs"
+  },
+  "files": [
+    "SKILL.md",
+    "VERSION",
+    "agents/openai.yaml",
+    "install.ps1",
+    "install.sh",
+    "installer/install.mjs",
+    "installer/selector.mjs",
+    "installer/targets.mjs",
+    "references/codex-adapter.md",
+    "references/protocol.sudo.md"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "engines": {
     "node": ">=18"

@@ -29,7 +29,7 @@ done
 test -f "$home_all/.agents/skills/quorum/agents/openai.yaml"
 test ! -e "$home_all/.claude/skills/quorum/agents/openai.yaml"
 test ! -e "$home_all/.cursor/skills/quorum/installer/install.mjs"
-grep -F "QUORUM v0.1.57" "$test_root/all.out" >/dev/null
+grep -F "QUORUM v0.1.58" "$test_root/all.out" >/dev/null
 
 home_selected="$test_root/home-selected"
 mkdir -p "$home_selected"
@@ -50,7 +50,7 @@ find "$home_selected/.cursor/skills" -maxdepth 1 -type d -name 'quorum.backup-*'
 
 if command -v pwsh >/dev/null 2>&1; then
   pwsh -NoProfile -File "$repo_root/install.ps1" --targets codex --scope project --project-root "$project_dry" --dry-run >"$test_root/powershell.out"
-  grep -F "QUORUM v0.1.57" "$test_root/powershell.out" >/dev/null
+  grep -F "QUORUM v0.1.58" "$test_root/powershell.out" >/dev/null
 else
   echo "PowerShell smoke test skipped: pwsh is unavailable"
 fi

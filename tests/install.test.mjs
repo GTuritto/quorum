@@ -6,7 +6,9 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 import {
+  assertSupportedNode,
   installSelected,
+  main,
   parseArguments,
   payloadFiles,
   validateSource,
@@ -22,6 +24,55 @@ async function withTempDirectory(callback) {
     await rm(directory, { recursive: true, force: true });
   }
 }
+
+function createSink() {
+  let value = "";
+  return {
+    write(chunk) {
+      value += chunk;
+    },
+    text() {
+      return value;
+    },
+  };
+}
+
+test("rejects Node.js versions older than 18", async () => {
+  assert.throws(() => assertSupportedNode("17.9.1"), /requires Node\.js 18 or later/);
+  assert.doesNotThrow(() => assertSupportedNode("18.0.0"));
+  assert.doesNotThrow(() => assertSupportedNode("25.9.0"));
+
+  const output = createSink();
+  const errorOutput = createSink();
+  const exitCode = await main({
+    argv: ["--help"],
+    nodeVersion: "17.9.1",
+    output,
+    errorOutput,
+    sourceRoot,
+  });
+
+  assert.equal(exitCode, 1);
+  assert.equal(output.text(), "");
+  assert.match(errorOutput.text(), /requires Node\.js 18 or later/);
+});
+
+test("help names both npm and archive entry points", async () => {
+  const output = createSink();
+  const errorOutput = createSink();
+  const exitCode = await main({
+    argv: ["--help"],
+    nodeVersion: "18.0.0",
+    output,
+    errorOutput,
+    sourceRoot,
+  });
+
+  assert.equal(exitCode, 0);
+  assert.match(output.text(), /quorum-skill \[options\]/);
+  assert.match(output.text(), /\.\/install\.sh \[options\]/);
+  assert.equal(errorOutput.text(), "");
+});
 
 test("parses preselected targets and project options", () => {
   assert.deepEqual(parseArguments([
@@ -55,7 +106,7 @@ test("rejects conflicting and invalid options", () => {
 
 test("validates versions and source payload", async () => {
   const source = await validateSource(sourceRoot);
-  assert.equal(source.version, "0.1.57");
+  assert.equal(source.version, "0.1.58");
   assert.deepEqual(await payloadFiles(sourceRoot, false), [
     "SKILL.md",
     "VERSION",
@@ -79,7 +130,7 @@ test("installs selected targets with target-specific payloads", async () => {
 
     const codex = path.join(homeDir, ".agents", "skills", "quorum");
     const claude = path.join(homeDir, ".claude", "skills", "quorum");
-    assert.equal((await readFile(path.join(codex, "VERSION"), "utf8")).trim(), "0.1.57");
+    assert.equal((await readFile(path.join(codex, "VERSION"), "utf8")).trim(), "0.1.58");
     assert.equal((await readFile(path.join(codex, "agents", "openai.yaml"), "utf8")).includes("Quorum"), true);
     await assert.rejects(readFile(path.join(claude, "agents", "openai.yaml")), /ENOENT/);
   });

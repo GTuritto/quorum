@@ -1,0 +1,16 @@
+.DS_Store
+Thumbs.db
+
+node_modules/
+coverage/
+*.log
+
+.env
+.env.*
+!.env.example
+
+.idea/
+.vscode/
+
+.quorum-install-*
+*.backup-*

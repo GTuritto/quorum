@@ -1,0 +1,48 @@
+name: Feature request
+description: Propose a focused improvement to Quorum.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Explain the problem first. For large protocol or compatibility changes, include migration and portability considerations.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What limitation or user need should Quorum address?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Describe the smallest useful solution.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Note workarounds, tradeoffs, and reversible alternatives.
+  - type: dropdown
+    id: compatibility
+    attributes:
+      label: Compatibility impact
+      options:
+        - No known compatibility impact
+        - Changes one supported target
+        - Changes several supported targets
+        - Changes the portable protocol
+        - Unsure
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues and pull requests.
+          required: true

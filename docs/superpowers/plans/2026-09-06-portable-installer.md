@@ -128,8 +128,10 @@ Verification:
 ```sh
 npm test
 git diff --check
-python3 /Users/giuseppe/.codex/skills/.system/skill-creator/scripts/quick_validate.py .
 ```
+
+When Codex's `skill-creator` tooling is available, also run its quick validator
+against the repository root.
 
 ## Final verification
 

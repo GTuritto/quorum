@@ -1,8 +1,18 @@
 {
   "name": "quorum-agent-skill",
   "version": "0.1.57",
+  "description": "Adaptive multi-perspective reasoning skill for AI coding agents.",
   "private": true,
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GTuritto/quorum.git"
+  },
+  "homepage": "https://github.com/GTuritto/quorum#readme",
+  "bugs": {
+    "url": "https://github.com/GTuritto/quorum/issues"
+  },
   "engines": {
     "node": ">=18"
   },

@@ -12,6 +12,7 @@ coverage/
 .idea/
 .vscode/
 .worktrees/
+dist/
 
 .quorum-install-*
 *.backup-*

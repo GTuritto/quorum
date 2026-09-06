@@ -8,6 +8,7 @@ import {
   mkdtemp,
   readFile,
   readdir,
+  realpath,
   rename,
   rm,
 } from "node:fs/promises";
@@ -397,7 +398,7 @@ export async function main({
   }
 }
 
-const invokedPath = process.argv[1] ? pathToFileURL(path.resolve(process.argv[1])).href : "";
+const invokedPath = process.argv[1] ? pathToFileURL(await realpath(process.argv[1])).href : "";
 if (import.meta.url === invokedPath) {
   process.exitCode = await main();
 }

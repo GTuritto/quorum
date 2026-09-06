@@ -1,0 +1,6 @@
+interface:
+  display_name: "Quorum"
+  short_description: "Adaptive multi-perspective decision protocol"
+  default_prompt: "Use $quorum to analyze this decision and recommend the next action."
+policy:
+  allow_implicit_invocation: true

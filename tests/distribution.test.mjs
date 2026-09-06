@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { access, mkdtemp, mkdir, readFile, rm } from "node:fs/promises";
+import { access, mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -60,6 +60,28 @@ test("builds matching tgz, zip, and SHA256SUMS", async () => {
       `${await sha256File(result.tgzPath)}  ${path.basename(result.tgzPath)}\n` +
         `${await sha256File(result.zipPath)}  ${path.basename(result.zipPath)}\n`,
     );
+  });
+});
+
+test("rejects mismatched versions before clearing distribution output", async () => {
+  await withTempDirectory(async (temporaryRoot) => {
+    const fixtureRoot = path.join(temporaryRoot, "fixture");
+    const outputDirectory = path.join(temporaryRoot, "dist");
+    const sentinelPath = path.join(outputDirectory, "sentinel");
+    await mkdir(fixtureRoot);
+    await mkdir(outputDirectory);
+    await Promise.all([
+      writeFile(path.join(fixtureRoot, "VERSION"), "0.1.58\n"),
+      writeFile(path.join(fixtureRoot, "package.json"), '{"version":"0.1.59"}\n'),
+      writeFile(path.join(fixtureRoot, "SKILL.md"), '---\n  version: "0.1.58"\n---\n'),
+      writeFile(sentinelPath, "preserve me"),
+    ]);
+
+    await assert.rejects(
+      buildDistribution({ root: fixtureRoot, outputDirectory }),
+      /VERSION, package\.json, and SKILL\.md versions must match/,
+    );
+    assert.equal(await readFile(sentinelPath, "utf8"), "preserve me");
   });
 });
 

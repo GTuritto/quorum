@@ -16,6 +16,19 @@ import {
 
 const SOURCE_ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 
+function parseSkillVersion(skill) {
+  return skill.match(/^\s{2}version:\s*["']?([^"'\n]+)["']?\s*$/m)?.[1];
+}
+
+function assertMatchingVersions(version, packageVersion, skillVersion) {
+  if (![version, packageVersion, skillVersion].every((value) => /^\d+\.\d+\.\d+$/.test(value))) {
+    throw new Error("VERSION, package.json, and SKILL.md must declare valid semantic versions");
+  }
+  if (version !== packageVersion || version !== skillVersion) {
+    throw new Error("VERSION, package.json, and SKILL.md versions must match");
+  }
+}
+
 function runNpm(args, cwd) {
   const npmCli = process.env.npm_execpath;
   if (!npmCli) throw new Error("Run the distribution builder through npm run dist");
@@ -48,8 +61,13 @@ export async function buildDistribution({
     throw new Error("Distribution output directory must be named dist");
   }
 
-  const version = (await readFile(path.join(root, "VERSION"), "utf8")).trim();
-  if (!/^\d+\.\d+\.\d+$/.test(version)) throw new Error(`Invalid VERSION: ${version}`);
+  const [versionText, packageText, skill] = await Promise.all([
+    readFile(path.join(root, "VERSION"), "utf8"),
+    readFile(path.join(root, "package.json"), "utf8"),
+    readFile(path.join(root, "SKILL.md"), "utf8"),
+  ]);
+  const version = versionText.trim();
+  assertMatchingVersions(version, JSON.parse(packageText).version, parseSkillVersion(skill));
 
   await rm(outputDirectory, { recursive: true, force: true });
   await mkdir(outputDirectory, { recursive: true });

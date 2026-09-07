@@ -11,6 +11,7 @@ import {
   main,
   parseArguments,
   payloadFiles,
+  resolveRunPlan,
   validateSource,
 } from "../installer/install.mjs";
 
@@ -87,11 +88,22 @@ test("parses preselected targets and project options", () => {
     all: false,
     scope: "project",
     projectRoot: "/tmp/project",
+    skillsDir: null,
+    operation: "install",
     dryRun: true,
     yes: true,
     help: false,
+    version: false,
   });
   assert.equal(parseArguments(["--all"]).targetIds.length, 5);
+});
+
+test("parses update aliases, uninstall, skills-dir, and version", () => {
+  assert.equal(parseArguments(["--update"]).operation, "update");
+  assert.equal(parseArguments(["--upgrade"]).operation, "update");
+  assert.equal(parseArguments(["--uninstall"]).operation, "uninstall");
+  assert.equal(parseArguments(["--skills-dir", "./skills"]).skillsDir, "./skills");
+  assert.equal(parseArguments(["--version"]).version, true);
 });
 
 test("rejects conflicting and invalid options", () => {
@@ -102,6 +114,151 @@ test("rejects conflicting and invalid options", () => {
     /cannot be used with user scope/,
   );
   assert.throws(() => parseArguments(["--no-color"]), /Unknown option/);
+  assert.throws(() => parseArguments(["--update", "--upgrade"]), /cannot be used together/);
+  assert.throws(() => parseArguments(["--update", "--uninstall"]), /cannot be used together/);
+  assert.throws(() => parseArguments(["--skills-dir", "./skills", "--targets", "codex"]), /cannot be used with/);
+  assert.throws(() => parseArguments(["--skills-dir", "./skills", "--scope", "user"]), /cannot be used with/);
+  assert.throws(() => parseArguments(["--version", "--yes"]), /must be used alone/);
+  assert.throws(() => parseArguments(["--help", "--dry-run"]), /must be used alone/);
+});
+
+test("version reads only VERSION and exits without a banner or destination access", async () => {
+  await withTempDirectory(async (temporaryRoot) => {
+    await writeFile(path.join(temporaryRoot, "VERSION"), "9.8.7\n");
+    const output = createSink();
+    const errorOutput = createSink();
+    const exitCode = await main({
+      argv: ["--version"],
+      output,
+      errorOutput,
+      sourceRoot: temporaryRoot,
+    });
+    assert.equal(exitCode, 0);
+    assert.equal(output.text(), "quorum-skill 9.8.7\n");
+    assert.equal(errorOutput.text(), "");
+  });
+});
+
+test("no-target update chooses managed installations only", async () => {
+  const plan = await resolveRunPlan(parseArguments(["--update"]), {
+    scope: "user",
+    homeDir: "/home/giuseppe",
+    projectRoot: null,
+    discover: async () => ({
+      managed: [{
+        destination: "/home/giuseppe/.agents/skills/quorum",
+        targetIds: ["codex"],
+        labels: ["Codex"],
+        includeOpenAI: true,
+      }],
+      legacy: [],
+      foreign: [],
+    }),
+    detect: async () => { throw new Error("tool detection must not run"); },
+  });
+  assert.equal(plan.operation, "update");
+  assert.deepEqual(plan.targetIds, ["codex"]);
+});
+
+test("no-target update installs for detected tools when no managed installation exists", async () => {
+  const plan = await resolveRunPlan(parseArguments(["--update"]), {
+    scope: "user",
+    homeDir: "/home/giuseppe",
+    projectRoot: null,
+    discover: async () => ({ managed: [], legacy: [], foreign: [] }),
+    detect: async () => [
+      { targetId: "claude", evidence: "command: claude" },
+      { targetId: "cursor", evidence: "command: cursor-agent" },
+    ],
+  });
+  assert.equal(plan.operation, "install");
+  assert.deepEqual(plan.targetIds, ["claude", "cursor"]);
+  assert.equal(plan.automatic, true);
+});
+
+test("explicit missing update target remains an update destination", async () => {
+  const plan = await resolveRunPlan(parseArguments(["--update", "--targets", "codex"]), {
+    scope: "user",
+    homeDir: "/home/giuseppe",
+    projectRoot: null,
+    discover: async () => { throw new Error("discovery must not run"); },
+  });
+  assert.equal(plan.operation, "update");
+  assert.deepEqual(plan.targetIds, ["codex"]);
+  assert.equal(plan.allowMissingInstall, false);
+});
+
+test("normal no-target routing preserves the selector only with a managed install", async () => {
+  let selectorCalls = 0;
+  const plan = await resolveRunPlan(parseArguments([]), {
+    scope: "user",
+    homeDir: "/home/giuseppe",
+    projectRoot: null,
+    discover: async () => ({
+      managed: [{ targetIds: ["codex"] }],
+      legacy: [],
+      foreign: [],
+    }),
+    selectTargets: async () => {
+      selectorCalls += 1;
+      return ["cursor"];
+    },
+  });
+  assert.equal(selectorCalls, 1);
+  assert.deepEqual(plan.targetIds, ["cursor"]);
+});
+
+test("legacy evidence and detected tools install without the selector", async () => {
+  const plan = await resolveRunPlan(parseArguments([]), {
+    scope: "user",
+    homeDir: "/home/giuseppe",
+    projectRoot: null,
+    discover: async () => ({
+      managed: [],
+      legacy: [{ destination: "/home/giuseppe/.codex/skills/quorum", targetIds: ["codex"] }],
+      foreign: [],
+    }),
+    detect: async () => [{ targetId: "claude", evidence: "command: claude" }],
+    selectTargets: async () => { throw new Error("selector must not run"); },
+  });
+  assert.deepEqual(plan.targetIds, ["codex", "claude"]);
+  assert.equal(plan.operation, "install");
+  assert.equal(plan.legacy.length, 1);
+});
+
+test("no detected tool prompts for a custom parent only in an interactive run", async () => {
+  const base = {
+    scope: "user",
+    homeDir: "/home/giuseppe",
+    projectRoot: null,
+    cwd: "/work",
+    discover: async () => ({ managed: [], legacy: [], foreign: [] }),
+    detect: async () => [],
+  };
+  const plan = await resolveRunPlan(parseArguments([]), {
+    ...base,
+    interactive: true,
+    promptForSkillsDir: async () => "./skills",
+  });
+  assert.equal(plan.groups[0].destination, "/work/skills/quorum");
+  assert.deepEqual(plan.targetIds, ["custom"]);
+
+  await assert.rejects(
+    resolveRunPlan(parseArguments([]), { ...base, interactive: false }),
+    /--skills-dir, --targets, or --all/,
+  );
+});
+
+test("explicit skills directory takes precedence over discovery", async () => {
+  const plan = await resolveRunPlan(parseArguments(["--skills-dir", "~/portable-skills"]), {
+    scope: "user",
+    homeDir: "/home/giuseppe",
+    projectRoot: null,
+    cwd: "/work",
+    discover: async () => { throw new Error("discovery must not run"); },
+  });
+  assert.equal(plan.groups[0].destination, "/home/giuseppe/portable-skills/quorum");
+  assert.equal(plan.groups[0].includeOpenAI, false);
 });
 
 test("validates versions and source payload", async () => {

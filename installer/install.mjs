@@ -17,7 +17,18 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { formatBanner, runSelector } from "./selector.mjs";
-import { allTargetIds, groupDestinations, parseTargetList } from "./targets.mjs";
+import {
+  detectTools,
+  discoverInstallations,
+  resolveSkillsDestination,
+} from "./detection.mjs";
+import {
+  allTargetIds,
+  groupCustomDestination,
+  groupDestinations,
+  parseTargetList,
+} from "./targets.mjs";
+import { parseSemanticVersion } from "./version.mjs";
 
 const SOURCE_ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const COMMON_PAYLOAD = ["SKILL.md", "VERSION", "references"];
@@ -36,10 +47,15 @@ export function parseArguments(argv) {
     all: false,
     scope: null,
     projectRoot: null,
+    skillsDir: null,
+    operation: "install",
     dryRun: false,
     yes: false,
     help: false,
+    version: false,
   };
+  let scopeWasProvided = false;
+  const operationFlags = [];
 
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
@@ -54,12 +70,28 @@ export function parseArguments(argv) {
     else if (argument.startsWith("--targets=")) {
       options.targetIds = parseTargetList(argument.slice("--targets=".length));
     } else if (argument === "--all") options.all = true;
-    else if (argument === "--scope") options.scope = nextValue("--scope");
-    else if (argument.startsWith("--scope=")) options.scope = argument.slice("--scope=".length);
+    else if (argument === "--scope") {
+      options.scope = nextValue("--scope");
+      scopeWasProvided = true;
+    } else if (argument.startsWith("--scope=")) {
+      options.scope = argument.slice("--scope=".length);
+      scopeWasProvided = true;
+    }
     else if (argument === "--project-root") options.projectRoot = nextValue("--project-root");
     else if (argument.startsWith("--project-root=")) {
       options.projectRoot = argument.slice("--project-root=".length);
-    } else if (argument === "--dry-run") options.dryRun = true;
+    } else if (argument === "--skills-dir") options.skillsDir = nextValue("--skills-dir");
+    else if (argument.startsWith("--skills-dir=")) {
+      options.skillsDir = argument.slice("--skills-dir=".length);
+      if (!options.skillsDir) throw new Error("--skills-dir requires a value");
+    } else if (argument === "--update" || argument === "--upgrade") {
+      operationFlags.push(argument);
+      options.operation = "update";
+    } else if (argument === "--uninstall") {
+      operationFlags.push(argument);
+      options.operation = "uninstall";
+    } else if (argument === "--version") options.version = true;
+    else if (argument === "--dry-run") options.dryRun = true;
     else if (argument === "--yes") options.yes = true;
     else if (argument === "--help" || argument === "-h") options.help = true;
     else throw new Error(`Unknown option: ${argument}`);
@@ -67,6 +99,15 @@ export function parseArguments(argv) {
 
   if (options.all && options.targetIds) {
     throw new Error("--targets and --all cannot be used together");
+  }
+  if (operationFlags.length > 1) {
+    throw new Error(`${operationFlags.join(" and ")} cannot be used together`);
+  }
+  if (options.skillsDir && (options.targetIds || options.all || scopeWasProvided || options.projectRoot)) {
+    throw new Error("--skills-dir cannot be used with --targets, --all, --scope, or --project-root");
+  }
+  if ((options.help || options.version) && argv.length !== 1) {
+    throw new Error(`${options.help ? "--help" : "--version"} must be used alone`);
   }
   if (options.scope && !["user", "project"].includes(options.scope)) {
     throw new Error("--scope must be user or project");
@@ -86,7 +127,8 @@ export function helpText() {
   quorum-skill [options]
   ./install.sh [options]
 
-Without --targets or --all, Quorum opens an interactive target selector.
+Without explicit targets, Quorum updates existing installations or installs for
+detected supported tools. It prompts for a parent skills directory when needed.
 
 Options:
   --targets LIST       Comma-separated targets: codex, claude, antigravity,
@@ -94,8 +136,13 @@ Options:
   --all                Select every supported target
   --scope SCOPE        user (default) or project
   --project-root PATH  Project destination; implies --scope project
+  --skills-dir PATH    Explicit parent skills directory; appends quorum
+  --update             Apply the running package to existing installations
+  --upgrade            Alias for --update
+  --uninstall          Permanently remove recognized Quorum installations
+  --version            Print the running package version
   --dry-run            Show planned actions without writing
-  --yes                Replace differing installations without prompting
+  --yes                Confirm eligible replacement or permanent removal
   --help, -h           Show this help
 `;
 }
@@ -273,6 +320,7 @@ export async function installDestination(group, options) {
 export async function installSelected({
   sourceRoot = SOURCE_ROOT,
   targetIds,
+  groups: selectedGroups,
   scope,
   homeDir,
   projectRoot,
@@ -283,7 +331,7 @@ export async function installSelected({
   input = process.stdin,
   output = process.stdout,
 }) {
-  const groups = groupDestinations(targetIds, { scope, homeDir, projectRoot });
+  const groups = selectedGroups ?? groupDestinations(targetIds, { scope, homeDir, projectRoot });
   const results = [];
 
   for (const group of groups) {
@@ -316,6 +364,174 @@ export function inferProjectRoot(cwd) {
   }
 }
 
+function uniqueTargetIds(groups) {
+  return [...new Set(groups.flatMap((group) => group.targetIds))];
+}
+
+function deduplicateGroups(groups) {
+  const byDestination = new Map();
+  for (const group of groups) {
+    const existing = byDestination.get(group.destination);
+    if (!existing) {
+      byDestination.set(group.destination, { ...group });
+      continue;
+    }
+    existing.targetIds = [...new Set([...existing.targetIds, ...group.targetIds])];
+    existing.labels = [...new Set([...existing.labels, ...group.labels])];
+    existing.includeOpenAI ||= group.includeOpenAI;
+  }
+  return [...byDestination.values()];
+}
+
+export async function promptForSkillsDirectory({ input, output }) {
+  if (!input?.isTTY || !output?.isTTY) return null;
+  const { createInterface } = await import("node:readline/promises");
+  const prompt = createInterface({ input, output });
+  try {
+    const answer = await prompt.question(
+      "No supported tools detected.\nEnter a parent skills directory, or press Ctrl+C to cancel: ",
+    );
+    return answer.trim() || null;
+  } catch (error) {
+    if (error.code === "ERR_USE_AFTER_CLOSE" || error.name === "AbortError") return null;
+    throw error;
+  } finally {
+    prompt.close();
+  }
+}
+
+export async function resolveRunPlan(options, {
+  scope = options.scope,
+  homeDir,
+  projectRoot,
+  cwd = process.cwd(),
+  env = process.env,
+  interactive = true,
+  sourceVersion,
+  discover = discoverInstallations,
+  detect = detectTools,
+  selectTargets,
+  promptForSkillsDir,
+} = {}) {
+  if (options.skillsDir) {
+    const destination = resolveSkillsDestination(options.skillsDir, { cwd, homeDir });
+    return {
+      operation: options.operation,
+      groups: groupCustomDestination(destination),
+      targetIds: ["custom"],
+      evidence: [],
+      legacy: [],
+      foreign: [],
+      automatic: false,
+      allowMissingInstall: options.operation === "install",
+    };
+  }
+
+  if (options.targetIds) {
+    return {
+      operation: options.operation,
+      groups: groupDestinations(options.targetIds, { scope, homeDir, projectRoot }),
+      targetIds: options.targetIds,
+      evidence: [],
+      legacy: [],
+      foreign: [],
+      automatic: false,
+      allowMissingInstall: options.operation === "install",
+    };
+  }
+
+  const discovered = await discover({
+    targetIds: allTargetIds(),
+    scope,
+    homeDir,
+    projectRoot,
+    env,
+  });
+
+  if (options.operation === "uninstall") {
+    const groups = deduplicateGroups([
+      ...discovered.managed,
+      ...discovered.legacy,
+      ...discovered.foreign,
+    ]);
+    return {
+      operation: "uninstall",
+      groups,
+      targetIds: uniqueTargetIds(groups),
+      evidence: [],
+      legacy: discovered.legacy,
+      foreign: discovered.foreign,
+      automatic: true,
+      allowMissingInstall: false,
+    };
+  }
+
+  if (options.operation === "update" && discovered.managed.length > 0) {
+    return {
+      operation: "update",
+      groups: discovered.managed,
+      targetIds: uniqueTargetIds(discovered.managed),
+      evidence: [],
+      legacy: discovered.legacy,
+      foreign: discovered.foreign,
+      automatic: true,
+      allowMissingInstall: false,
+    };
+  }
+
+  if (options.operation === "install" && discovered.managed.length > 0) {
+    if (!selectTargets) throw new Error("Interactive target selection is unavailable");
+    const targetIds = await selectTargets({ version: sourceVersion });
+    if (!targetIds) return { cancelled: true, operation: "install", groups: [], targetIds: [] };
+    return {
+      operation: "install",
+      groups: groupDestinations(targetIds, { scope, homeDir, projectRoot }),
+      targetIds,
+      evidence: [],
+      legacy: discovered.legacy,
+      foreign: discovered.foreign,
+      automatic: false,
+      allowMissingInstall: true,
+    };
+  }
+
+  const detected = await detect({ env, homeDir });
+  const targetIds = [...new Set([
+    ...(discovered.legacy.length > 0 ? ["codex"] : []),
+    ...detected.map(({ targetId }) => targetId),
+  ])];
+  if (targetIds.length > 0) {
+    return {
+      operation: "install",
+      groups: groupDestinations(targetIds, { scope, homeDir, projectRoot }),
+      targetIds,
+      evidence: detected,
+      legacy: discovered.legacy,
+      foreign: discovered.foreign,
+      automatic: true,
+      allowMissingInstall: true,
+    };
+  }
+
+  if (!interactive) {
+    throw new Error("No supported tools detected; use --skills-dir, --targets, or --all");
+  }
+  if (!promptForSkillsDir) throw new Error("Custom skills directory prompt is unavailable");
+  const value = await promptForSkillsDir();
+  if (!value) return { cancelled: true, operation: "install", groups: [], targetIds: [] };
+  const destination = resolveSkillsDestination(value, { cwd, homeDir });
+  return {
+    operation: "install",
+    groups: groupCustomDestination(destination),
+    targetIds: ["custom"],
+    evidence: [],
+    legacy: discovered.legacy,
+    foreign: discovered.foreign,
+    automatic: true,
+    allowMissingInstall: true,
+  };
+}
+
 function formatResult(result) {
   const consumers = result.labels.join(", ");
   if (result.status === "planned") return `PLAN      ${result.action} ${result.destination} (${consumers})`;
@@ -344,10 +560,17 @@ export async function main({
   errorOutput = process.stderr,
   sourceRoot = SOURCE_ROOT,
   nodeVersion = process.versions.node,
+  homeDir = os.homedir(),
 } = {}) {
   try {
     assertSupportedNode(nodeVersion);
     const options = parseArguments(argv);
+    if (options.version) {
+      const version = (await readFile(path.join(sourceRoot, "VERSION"), "utf8")).trim();
+      if (!parseSemanticVersion(version)) throw new Error(`Invalid VERSION: ${version}`);
+      output.write(`quorum-skill ${version}\n`);
+      return 0;
+    }
     const source = await validateSource(sourceRoot);
     output.write(`${formatBanner(source.version)}\n`);
     if (options.help) {
@@ -355,41 +578,51 @@ export async function main({
       return 0;
     }
 
-    let targetIds = options.targetIds;
-    if (!targetIds) {
-      targetIds = await runSelector({ version: source.version, input, output });
-      if (!targetIds) {
-        output.write("Installation cancelled.\n");
-        return 130;
-      }
-    }
-
-    const homeDir = os.homedir();
     const projectRoot = options.scope === "project"
       ? path.resolve(options.projectRoot ?? inferProjectRoot(cwd))
       : null;
-    const context = {
-      sourceRoot,
-      targetIds,
+    const plan = await resolveRunPlan(options, {
       scope: options.scope,
       homeDir,
       projectRoot,
+      cwd,
+      env,
+      interactive: Boolean(input?.isTTY && output?.isTTY),
+      sourceVersion: source.version,
+      selectTargets: (selectorOptions) => runSelector({ ...selectorOptions, input, output }),
+      promptForSkillsDir: () => promptForSkillsDirectory({ input, output }),
+    });
+    if (plan.cancelled) {
+      output.write("Installation cancelled.\n");
+      return 130;
+    }
+
+    const context = {
+      sourceRoot,
+      targetIds: plan.targetIds,
+      groups: plan.groups,
+      scope: options.scope,
+      homeDir,
+      projectRoot,
+      operation: plan.operation,
+      allowMissingInstall: plan.allowMissingInstall,
       dryRun: options.dryRun,
       yes: options.yes,
       input,
       output,
     };
-    const groups = groupDestinations(targetIds, context);
-
     output.write(`Scope: ${options.scope}${projectRoot ? ` (${projectRoot})` : ""}\n`);
-    output.write(`Targets: ${targetIds.join(", ")}\n`);
+    output.write(`Targets: ${plan.targetIds.join(", ") || "none"}\n`);
+    plan.evidence.forEach(({ targetId, evidence }) => {
+      output.write(`Detected ${targetId} (${evidence})\n`);
+    });
     output.write("Destinations:\n");
-    groups.forEach((group) => output.write(`  ${group.destination} (${group.labels.join(", ")})\n`));
+    plan.groups.forEach((group) => output.write(`  ${group.destination} (${group.labels.join(", ")})\n`));
     output.write("\n");
 
     const results = await installSelected(context);
     results.forEach((result) => output.write(`${formatResult(result)}\n`));
-    await reportLegacyCodex({ targetIds, scope: options.scope, homeDir, env, output });
+    await reportLegacyCodex({ targetIds: plan.targetIds, scope: options.scope, homeDir, env, output });
 
     return results.some((result) => result.status === "failed") ? 1 : 0;
   } catch (error) {

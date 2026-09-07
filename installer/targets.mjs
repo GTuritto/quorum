@@ -8,6 +8,9 @@ export const TARGETS = Object.freeze([
     userPath: Object.freeze([".agents", "skills", "quorum"]),
     projectPath: Object.freeze([".agents", "skills", "quorum"]),
     includeOpenAI: true,
+    commands: Object.freeze(["codex"]),
+    macApplications: Object.freeze(["/Applications/Codex.app", "~/Applications/Codex.app"]),
+    extensionMarkers: Object.freeze([]),
   }),
   Object.freeze({
     id: "claude",
@@ -16,6 +19,9 @@ export const TARGETS = Object.freeze([
     userPath: Object.freeze([".claude", "skills", "quorum"]),
     projectPath: Object.freeze([".claude", "skills", "quorum"]),
     includeOpenAI: false,
+    commands: Object.freeze(["claude"]),
+    macApplications: Object.freeze(["/Applications/Claude.app", "~/Applications/Claude.app"]),
+    extensionMarkers: Object.freeze([]),
   }),
   Object.freeze({
     id: "antigravity",
@@ -24,6 +30,12 @@ export const TARGETS = Object.freeze([
     userPath: Object.freeze([".gemini", "config", "skills", "quorum"]),
     projectPath: Object.freeze([".agents", "skills", "quorum"]),
     includeOpenAI: false,
+    commands: Object.freeze(["agy-ide", "agy"]),
+    macApplications: Object.freeze([
+      "/Applications/Antigravity IDE.app",
+      "~/Applications/Antigravity IDE.app",
+    ]),
+    extensionMarkers: Object.freeze([]),
   }),
   Object.freeze({
     id: "vscode",
@@ -32,6 +44,18 @@ export const TARGETS = Object.freeze([
     userPath: Object.freeze([".copilot", "skills", "quorum"]),
     projectPath: Object.freeze([".github", "skills", "quorum"]),
     includeOpenAI: false,
+    commands: Object.freeze(["copilot"]),
+    macApplications: Object.freeze([]),
+    extensionMarkers: Object.freeze([
+      Object.freeze({
+        root: Object.freeze([".vscode", "extensions"]),
+        prefix: "github.copilot-chat-",
+      }),
+      Object.freeze({
+        root: Object.freeze([".vscode-insiders", "extensions"]),
+        prefix: "github.copilot-chat-",
+      }),
+    ]),
   }),
   Object.freeze({
     id: "cursor",
@@ -40,6 +64,9 @@ export const TARGETS = Object.freeze([
     userPath: Object.freeze([".cursor", "skills", "quorum"]),
     projectPath: Object.freeze([".cursor", "skills", "quorum"]),
     includeOpenAI: false,
+    commands: Object.freeze(["cursor-agent"]),
+    macApplications: Object.freeze(["/Applications/Cursor.app", "~/Applications/Cursor.app"]),
+    extensionMarkers: Object.freeze([]),
   }),
 ]);
 
@@ -115,4 +142,13 @@ export function groupDestinations(targetIds, context) {
   }
 
   return [...groups.values()];
+}
+
+export function groupCustomDestination(destination) {
+  return [{
+    destination: path.resolve(destination),
+    targetIds: ["custom"],
+    labels: ["Custom"],
+    includeOpenAI: false,
+  }];
 }

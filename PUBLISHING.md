@@ -42,13 +42,18 @@ Run the local gate, push `main`, and dispatch the trusted workflow:
 
 ```sh
 npm test
-npm run dist
+TZ=UTC npm run dist
 git diff --check
 git push origin main
 gh workflow run publish.yml --ref main -f version=0.1.59
 quorum_run_id=$(gh run list --workflow publish.yml --branch main --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId')
 gh run watch "$quorum_run_id" --exit-status
 ```
+
+Use UTC for the local distribution build. The system ZIP format records local
+wall-clock timestamps, while npm normalizes packaged file times. Matching the
+GitHub-hosted runner's UTC timezone makes the local and workflow ZIP archives
+byte-for-byte comparable.
 
 Download the workflow artifact and compare it with the local build:
 
@@ -64,8 +69,12 @@ Verify the registry version, executable, integrity, and provenance metadata:
 
 ```sh
 npm view quorum-skill@0.1.59 version dist.integrity dist.tarball dist.attestations --json
-npx -y quorum-skill@0.1.59 --version
+quorum_smoke_dir=$(mktemp -d "${TMPDIR:-/tmp}/quorum-0.1.59-smoke.XXXXXX")
+(cd "$quorum_smoke_dir" && npx -y quorum-skill@0.1.59 --version)
 ```
+
+Run the `npx` smoke test outside the source checkout. Inside a matching local
+package, npm may prefer the project without creating an executable link.
 
 Create the annotated tag only after npm verification. Attach the workflow's
 exact three files to a draft release, verify them, then publish the release.

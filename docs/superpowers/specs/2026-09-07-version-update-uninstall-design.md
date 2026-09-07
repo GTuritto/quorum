@@ -2,7 +2,7 @@
 
 Date: 2026-09-07
 Version: 0.1.59
-Status: Implemented and verified locally; release pending
+Status: Released on 2026-09-07
 
 ## Objective
 
@@ -534,9 +534,12 @@ Required local verification:
 
 ```sh
 npm test
-npm run dist
+TZ=UTC npm run dist
 git diff --check
 ```
+
+The UTC environment keeps the release ZIP byte-for-byte reproducible with the
+GitHub-hosted publishing runner.
 
 ## Documentation and release changes
 

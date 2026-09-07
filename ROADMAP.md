@@ -3,11 +3,15 @@
 This roadmap records intended future work. Items are not committed release
 dates or approved implementation specifications.
 
-## Release candidate: 0.1.59
+## Released: 0.1.59
 
-The approved design is implemented and verified locally:
+Released on 2026-09-07 through npm trusted publishing with verified
+provenance. The package is available from
+[npm](https://www.npmjs.com/package/quorum-skill/v/0.1.59), with checksummed
+archives attached to the
+[GitHub release](https://github.com/GTuritto/quorum/releases/tag/v0.1.59).
+The approved design is documented at:
 [`docs/superpowers/specs/2026-09-07-version-update-uninstall-design.md`](docs/superpowers/specs/2026-09-07-version-update-uninstall-design.md).
-Trusted npm publication and the GitHub release remain pending.
 
 ### Version reporting
 
@@ -45,6 +49,9 @@ Trusted npm publication and the GitHub release remain pending.
 
 ### Deferred installer maintenance
 
+- Normalize ZIP timestamps inside the distribution builder so local and CI
+  archives remain byte-for-byte reproducible without a caller-supplied UTC
+  environment.
 - Consider a read-only `--status` command that lists installed targets,
   versions, legacy copies, and modified content.
 - Consider `--json` output after the human-readable status model stabilizes.
@@ -98,6 +105,7 @@ Trusted npm publication and the GitHub release remain pending.
 - Add tests for scope precedence, opt-out behavior, stale-record rejection,
   deletion, and the prohibition on persisting hidden reasoning.
 
-Because npm package versions are immutable, none of this work will modify
-`0.1.58`. The `0.1.60` release remains optional: its work may move into `0.2.0`
-if a separate interim release would not provide enough user value.
+Because npm package versions are immutable, future work will not modify the
+published `0.1.58` or `0.1.59` packages. The `0.1.60` release remains optional:
+its work may move into `0.2.0` if a separate interim release would not provide
+enough user value.

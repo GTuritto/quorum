@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+**Status:** Completed and released on 2026-09-07.
+
 **Goal:** Release `quorum-skill@0.1.59` with version reporting, conservative installation discovery, version-aware update and upgrade, explicit custom destinations, permanent uninstall, complete documentation, and verified npm provenance.
 
 **Architecture:** Keep `installer/install.mjs` as the CLI orchestrator. Add focused modules for Quorum identity, semantic versions, target discovery, and guarded removal; extend the declarative target registry with conservative detection signals. Reuse the existing selector, payload copier, staged placement, backups, rollback, and per-destination isolation.
@@ -599,7 +601,7 @@ Run:
 
 ```bash
 npm test
-npm run dist
+TZ=UTC npm run dist
 git diff --check
 ```
 
@@ -680,7 +682,8 @@ Expected: workflow and local release artifacts match byte for byte.
 
 ```bash
 npm view quorum-skill@0.1.59 version dist.integrity dist.tarball dist.attestations --json
-npx -y quorum-skill@0.1.59 --version
+quorum_smoke_dir=$(mktemp -d "${TMPDIR:-/tmp}/quorum-0.1.59-smoke.XXXXXX")
+(cd "$quorum_smoke_dir" && npx -y quorum-skill@0.1.59 --version)
 ```
 
 Expected: version 0.1.59, a registry integrity value, npm attestation metadata linked to the GitHub workflow, and exact CLI output `quorum-skill 0.1.59`.

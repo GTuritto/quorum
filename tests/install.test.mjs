@@ -261,6 +261,45 @@ test("explicit skills directory takes precedence over discovery", async () => {
   assert.equal(plan.groups[0].includeOpenAI, false);
 });
 
+test("no-target uninstall never detects supported tools", async () => {
+  const plan = await resolveRunPlan(parseArguments(["--uninstall"]), {
+    scope: "user",
+    homeDir: "/home/giuseppe",
+    projectRoot: null,
+    discover: async () => ({ managed: [], legacy: [], foreign: [] }),
+    detect: async () => { throw new Error("tool detection must not run"); },
+  });
+  assert.equal(plan.operation, "uninstall");
+  assert.deepEqual(plan.groups, []);
+});
+
+test("user-scope Codex uninstall removes current and recognized legacy installations", async () => {
+  await withTempDirectory(async (homeDir) => {
+    const current = path.join(homeDir, ".agents", "skills", "quorum");
+    const legacy = path.join(homeDir, ".codex", "skills", "quorum");
+    await mkdir(current, { recursive: true });
+    await mkdir(legacy, { recursive: true });
+    await writeFile(path.join(current, "SKILL.md"), "---\nname: quorum\n---\n");
+    await writeFile(path.join(legacy, "SKILL.md"), "---\nname: quorum\n---\n");
+    const output = createSink();
+    const errorOutput = createSink();
+    const exitCode = await main({
+      argv: ["--uninstall", "--targets", "codex", "--yes"],
+      cwd: homeDir,
+      homeDir,
+      env: {},
+      output,
+      errorOutput,
+      sourceRoot,
+    });
+    assert.equal(exitCode, 0);
+    await assert.rejects(readFile(path.join(current, "SKILL.md")), /ENOENT/);
+    await assert.rejects(readFile(path.join(legacy, "SKILL.md")), /ENOENT/);
+    assert.match(output.text(), /REMOVED/);
+    assert.equal(errorOutput.text(), "");
+  });
+});
+
 test("validates versions and source payload", async () => {
   const source = await validateSource(sourceRoot);
   assert.equal(source.version, "0.1.58");

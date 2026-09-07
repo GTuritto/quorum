@@ -21,6 +21,7 @@ import { inspectQuorumPath } from "./identity.mjs";
 import {
   detectTools,
   discoverInstallations,
+  legacyCodexPath,
   resolveSkillsDestination,
 } from "./detection.mjs";
 import {
@@ -30,6 +31,7 @@ import {
   parseTargetList,
 } from "./targets.mjs";
 import { compareSemanticVersions, parseSemanticVersion } from "./version.mjs";
+import { uninstallSelected } from "./uninstall.mjs";
 
 const SOURCE_ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const COMMON_PAYLOAD = ["SKILL.md", "VERSION", "references"];
@@ -494,6 +496,25 @@ function deduplicateGroups(groups) {
   return [...byDestination.values()];
 }
 
+async function includeExplicitLegacyUninstall(plan, { scope, homeDir, env }) {
+  if (plan.operation !== "uninstall" || scope !== "user" || !plan.targetIds.includes("codex")) {
+    return plan;
+  }
+  const destination = legacyCodexPath({ homeDir, env });
+  if (plan.groups.some((group) => group.destination === destination)) return plan;
+  const identity = await inspectQuorumPath(destination);
+  if (!identity.recognized) return plan;
+  plan.groups = deduplicateGroups([...plan.groups, {
+    destination,
+    targetIds: ["codex"],
+    labels: ["Legacy Codex"],
+    includeOpenAI: true,
+    legacy: true,
+    identity,
+  }]);
+  return plan;
+}
+
 export async function promptForSkillsDirectory({ input, output }) {
   if (!input?.isTTY || !output?.isTTY) return null;
   const { createInterface } = await import("node:readline/promises");
@@ -647,6 +668,7 @@ function formatResult(result) {
   const consumers = result.labels.join(", ");
   if (result.status === "planned") return `PLAN      ${result.action} ${result.destination} (${consumers})`;
   if (result.status === "installed") return `INSTALLED ${result.destination} (${consumers})`;
+  if (result.status === "removed") return `REMOVED   ${result.destination} (${consumers})`;
   if (result.status === "updated") {
     const versions = `installed ${result.installedVersion ?? "unknown"}, source ${result.sourceVersion}`;
     return `UPDATED   ${result.destination} (${consumers}; ${versions})\n           Backup: ${result.backup}`;
@@ -711,6 +733,11 @@ export async function main({
       output.write("Installation cancelled.\n");
       return 130;
     }
+    await includeExplicitLegacyUninstall(plan, {
+      scope: options.scope,
+      homeDir,
+      env,
+    });
 
     const context = {
       sourceRoot,
@@ -726,6 +753,7 @@ export async function main({
       yes: options.yes,
       input,
       output,
+      cwd,
     };
     output.write(`Scope: ${options.scope}${projectRoot ? ` (${projectRoot})` : ""}\n`);
     output.write(`Targets: ${plan.targetIds.join(", ") || "none"}\n`);
@@ -736,9 +764,17 @@ export async function main({
     plan.groups.forEach((group) => output.write(`  ${group.destination} (${group.labels.join(", ")})\n`));
     output.write("\n");
 
-    const results = await installSelected(context);
+    if (plan.operation === "uninstall" && plan.groups.length === 0) {
+      output.write("Quorum is not installed.\n");
+      return 0;
+    }
+    const results = plan.operation === "uninstall"
+      ? await uninstallSelected(plan.groups, context)
+      : await installSelected(context);
     results.forEach((result) => output.write(`${formatResult(result)}\n`));
-    await reportLegacyCodex({ targetIds: plan.targetIds, scope: options.scope, homeDir, env, output });
+    if (plan.operation !== "uninstall") {
+      await reportLegacyCodex({ targetIds: plan.targetIds, scope: options.scope, homeDir, env, output });
+    }
 
     return results.some((result) => ["failed", "refused"].includes(result.status)) ? 1 : 0;
   } catch (error) {

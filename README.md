@@ -32,6 +32,20 @@ Quorum helps an assistant examine difficult, ambiguous, or consequential decisio
 
 Quorum is a reasoning protocol, not evidence that several models participated. It never claims distinct-model agreement unless distinct models were actually invoked and verified.
 
+## Why Quorum Exists
+
+Quorum started almost by accident. I installed a local LLM Council implementation to understand how it worked and was impressed by the underlying pattern: let several models attempt the same problem independently, review and challenge their answers, then synthesize the strongest result.
+
+I wanted that pattern inside the tools where I do most of my development work, Codex and Claude Code. My first idea was to put an MCP server around the local council so coding agents could delegate difficult problems to it. Before building that, I remembered a SudoLang prompt I had written years earlier. It approached one problem from several perspectives, let those perspectives challenge one another, and consolidated their conclusions. I began testing how much of the council pattern a prompt could reproduce.
+
+The results were surprisingly useful. I iterated on the prompt in Codex against real engineering problems. Early versions performed structured deliberation inside one model context, but agent delegation changed the experiment. When the host supports it, Quorum can dispatch separate agents to investigate independently instead of only simulating several roles. Those agents can have different responsibilities and, where the host permits, different model and reasoning configurations. One might develop the strongest case for a solution while another searches for flaws, unsupported assumptions, or inconsistencies before their findings are reviewed and synthesized.
+
+That became especially valuable inside coding tools, where agents can inspect the codebase, compare an implementation with its ticket or requirements, and reason with the surrounding project context. Code review, implementation validation, architecture analysis, and difficult debugging emerged as practical uses.
+
+Eventually, keeping this as “that prompt I use” stopped making sense. I wanted a portable approach that could move between repositories and work in both Codex and Claude Code, so I turned it into a skill and named it Quorum. It uses the agent capabilities already available in the host and requires no separate council service.
+
+Quorum is not an implementation of, or replacement for, LLM Council. It grew from the same core idea: difficult decisions often benefit from independent attempts, disagreement, criticism, and synthesis instead of relying on the first plausible reasoning path.
+
 ## Requirements
 
 - Node.js 18 or later
@@ -264,7 +278,7 @@ Quorum activates automatically only when multiple perspectives are likely to imp
 - [`references/codex-adapter.md`](references/codex-adapter.md) maps the protocol to Codex capabilities.
 - [`installer/`](installer/) contains the dependency-free installation engine and terminal selector.
 
-For full runs, candidate branches receive only the problem, necessary context, a cognitive frame, and an output schema. Candidates are anonymized before review. The final response presents the synthesis, material dissent, and uncertainty without exposing hidden chain of thought.
+Mini runs can simulate several perspectives inside one model context. For full runs, a host with agent delegation can dispatch isolated candidate agents. When supported, those agents can use different models, reasoning levels, and responsibilities. Each candidate receives only the problem, necessary context, a cognitive frame, and an output schema. Candidates are anonymized before review. The final response presents the synthesis, material dissent, and uncertainty without exposing hidden chain of thought.
 
 ## Update safety
 

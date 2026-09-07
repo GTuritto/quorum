@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   copyFile,
   lstat,
   mkdir,
   mkdtemp,
   readFile,
+  readlink,
   readdir,
   realpath,
   rename,
@@ -26,6 +28,7 @@ import {
 } from "./detection.mjs";
 import {
   allTargetIds,
+  getTarget,
   groupCustomDestination,
   groupDestinations,
   parseTargetList,
@@ -83,6 +86,7 @@ export function parseArguments(argv) {
     else if (argument === "--project-root") options.projectRoot = nextValue("--project-root");
     else if (argument.startsWith("--project-root=")) {
       options.projectRoot = argument.slice("--project-root=".length);
+      if (!options.projectRoot) throw new Error("--project-root requires a value");
     } else if (argument === "--skills-dir") options.skillsDir = nextValue("--skills-dir");
     else if (argument.startsWith("--skills-dir=")) {
       options.skillsDir = argument.slice("--skills-dir=".length);
@@ -202,6 +206,12 @@ export async function validateSource(sourceRoot = SOURCE_ROOT) {
   return { sourceRoot, version };
 }
 
+async function readSourceVersion(sourceRoot) {
+  const version = (await readFile(path.join(sourceRoot, "VERSION"), "utf8")).trim();
+  if (!parseSemanticVersion(version)) throw new Error(`Invalid VERSION: ${version}`);
+  return version;
+}
+
 export async function payloadFiles(sourceRoot, includeOpenAI) {
   const payloadPaths = includeOpenAI ? [...COMMON_PAYLOAD, ...CODEX_PAYLOAD] : COMMON_PAYLOAD;
   const files = [];
@@ -234,6 +244,37 @@ async function destinationMatches(sourceRoot, destination, files) {
     if (!source.equals(installed)) return false;
   }
   return true;
+}
+
+async function hashDestinationNode(root, relative, digest) {
+  const absolute = path.join(root, relative);
+  const stat = await lstat(absolute);
+  const marker = stat.isDirectory()
+    ? "directory"
+    : stat.isFile()
+      ? "file"
+      : stat.isSymbolicLink()
+        ? "symlink"
+        : "other";
+  digest.update(`${marker}:${relative.length}:${relative}\0`);
+  if (stat.isDirectory()) {
+    const entries = await readdir(absolute);
+    for (const entry of entries.sort()) {
+      await hashDestinationNode(root, path.join(relative, entry), digest);
+    }
+  } else if (stat.isFile()) {
+    const content = await readFile(absolute);
+    digest.update(`${content.length}:`);
+    digest.update(content);
+  } else if (stat.isSymbolicLink()) {
+    digest.update(await readlink(absolute));
+  }
+}
+
+async function destinationFingerprint(destination) {
+  const digest = createHash("sha256");
+  await hashDestinationNode(destination, "", digest);
+  return digest.digest("hex");
 }
 
 async function copyPayload(sourceRoot, stage, files) {
@@ -291,6 +332,9 @@ export async function inspectDestination(group, {
   const contentMatches = identity.kind === "directory" && identity.recognized
     ? await destinationMatches(sourceRoot, group.destination, files)
     : false;
+  const contentFingerprint = identity.kind === "directory" && identity.recognized
+    ? await destinationFingerprint(group.destination)
+    : null;
   return {
     kind: identity.kind,
     recognized: identity.recognized,
@@ -299,6 +343,7 @@ export async function inspectDestination(group, {
     sourceVersion: resolvedSourceVersion,
     installedVersion,
     contentMatches,
+    contentFingerprint,
     files,
   };
 }
@@ -347,6 +392,7 @@ function snapshotSignature(snapshot) {
     resolvedPath: snapshot.resolvedPath ?? null,
     installedVersion: snapshot.installedVersion,
     contentMatches: snapshot.contentMatches,
+    contentFingerprint: snapshot.contentFingerprint,
   });
 }
 
@@ -680,11 +726,10 @@ function formatResult(result) {
 
 async function reportLegacyCodex({ targetIds, scope, homeDir, env, output }) {
   if (scope !== "user" || !targetIds.includes("codex")) return;
-  const codexHome = env.CODEX_HOME ? path.resolve(env.CODEX_HOME) : path.join(homeDir, ".codex");
-  const legacy = path.join(codexHome, "skills", "quorum");
-  if ((await pathKind(legacy)) !== "missing") {
+  const legacy = legacyCodexPath({ homeDir, env });
+  if ((await inspectQuorumPath(legacy)).recognized) {
     output.write(`\nLegacy Codex installation detected: ${legacy}\n`);
-    output.write("It was not changed. Verify the new installation before removing it manually.\n");
+    output.write("It was not changed. After verification, remove it with --uninstall --targets codex.\n");
   }
 }
 
@@ -703,12 +748,13 @@ export async function main({
     assertSupportedNode(nodeVersion);
     const options = parseArguments(argv);
     if (options.version) {
-      const version = (await readFile(path.join(sourceRoot, "VERSION"), "utf8")).trim();
-      if (!parseSemanticVersion(version)) throw new Error(`Invalid VERSION: ${version}`);
+      const version = await readSourceVersion(sourceRoot);
       output.write(`quorum-skill ${version}\n`);
       return 0;
     }
-    const source = await validateSource(sourceRoot);
+    const source = options.operation === "uninstall"
+      ? { sourceRoot, version: await readSourceVersion(sourceRoot) }
+      : await validateSource(sourceRoot);
     output.write(`${formatBanner(source.version)}\n`);
     if (options.help) {
       output.write(helpText());
@@ -755,10 +801,11 @@ export async function main({
       output,
       cwd,
     };
+    if (plan.operation !== "uninstall") output.write(`Source version: ${source.version}\n`);
     output.write(`Scope: ${options.scope}${projectRoot ? ` (${projectRoot})` : ""}\n`);
     output.write(`Targets: ${plan.targetIds.join(", ") || "none"}\n`);
     plan.evidence.forEach(({ targetId, evidence }) => {
-      output.write(`Detected ${targetId} (${evidence})\n`);
+      output.write(`Detected ${getTarget(targetId).label} (${evidence})\n`);
     });
     output.write("Destinations:\n");
     plan.groups.forEach((group) => output.write(`  ${group.destination} (${group.labels.join(", ")})\n`));

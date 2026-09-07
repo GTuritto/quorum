@@ -12,7 +12,7 @@ test("version and public package declarations agree", async () => {
   const skill = await readFile(path.join(root, "SKILL.md"), "utf8");
   const skillVersion = skill.match(/^\s{2}version:\s*["']?([^"'\n]+)["']?\s*$/m)?.[1];
 
-  assert.equal(version, "0.1.58");
+  assert.equal(version, "0.1.59");
   assert.equal(packageJson.name, "quorum-skill");
   assert.equal(packageJson.version, version);
   assert.equal(skillVersion, version);
@@ -24,6 +24,8 @@ test("version and public package declarations agree", async () => {
   assert.equal(packageJson.engines.node, ">=18");
   assert.equal(packageJson.author.name, "Giuseppe Turitto");
   assert.equal(packageJson.author.email, "giuseppe@turitto.com");
+  assert.equal(packageJson.dependencies, undefined);
+  assert.equal(packageJson.optionalDependencies, undefined);
 
   for (const lifecycle of ["preinstall", "install", "postinstall", "prepare"]) {
     assert.equal(packageJson.scripts[lifecycle], undefined);

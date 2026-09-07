@@ -3,11 +3,11 @@
 This roadmap records intended future work. Items are not committed release
 dates or approved implementation specifications.
 
-## Candidate release: 0.1.59
+## Release candidate: 0.1.59
 
-The design is approved for implementation:
+The approved design is implemented and verified locally:
 [`docs/superpowers/specs/2026-09-07-version-update-uninstall-design.md`](docs/superpowers/specs/2026-09-07-version-update-uninstall-design.md).
-Implementation is in progress.
+Trusted npm publication and the GitHub release remain pending.
 
 ### Version reporting
 

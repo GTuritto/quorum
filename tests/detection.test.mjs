@@ -33,6 +33,21 @@ test("detects commands without executing them and honors Windows PATHEXT", async
   assert.deepEqual(results, [{ targetId: "codex", evidence: "command: codex" }]);
 });
 
+test("requires executable permission for a real POSIX command marker", async () => {
+  await withTempDirectory(async (root) => {
+    await writeFile(path.join(root, "codex"), "not executable\n", { mode: 0o644 });
+    const results = await detectTools({
+      platform: "linux",
+      pathApi: path.posix,
+      homeDir: root,
+      env: { PATH: root },
+      pathIsDirectory: async () => false,
+      readDirectory: async () => [],
+    });
+    assert.deepEqual(results, []);
+  });
+});
+
 test("does not detect VS Code from the application or code command alone", async () => {
   const existing = new Set([
     "/Applications/Visual Studio Code.app",
@@ -65,6 +80,21 @@ test("detects macOS applications and Copilot extension markers", async () => {
     { targetId: "codex", evidence: "application: /Applications/Codex.app" },
     { targetId: "vscode", evidence: "extension: github.copilot-chat" },
   ]);
+});
+
+test("does not treat ordinary files as application or extension installations", async () => {
+  const results = await detectTools({
+    platform: "darwin",
+    pathApi: path.posix,
+    homeDir: "/Users/giuseppe",
+    env: { PATH: "" },
+    pathExists: async (candidate) => candidate === "/Applications/Codex.app",
+    pathIsDirectory: async () => false,
+    readDirectory: async (directory) => directory.endsWith("/.vscode/extensions")
+      ? [{ name: "github.copilot-chat-0.31.0", isDirectory: () => false }]
+      : [],
+  });
+  assert.deepEqual(results, []);
 });
 
 test("ignores inaccessible optional detection markers", async () => {

@@ -1,4 +1,5 @@
-import { access, readdir } from "node:fs/promises";
+import { access, lstat, readdir } from "node:fs/promises";
+import { constants } from "node:fs";
 import path from "node:path";
 
 import { inspectQuorumPath } from "./identity.mjs";
@@ -6,12 +7,25 @@ import { TARGETS, allTargetIds, groupDestinations } from "./targets.mjs";
 
 async function defaultPathExists(candidate) {
   try {
-    await access(candidate);
+    await access(candidate, constants.X_OK);
     return true;
   } catch (error) {
     if (["EACCES", "ENOENT", "ENOTDIR"].includes(error.code)) return false;
     throw error;
   }
+}
+
+async function defaultPathIsDirectory(candidate) {
+  try {
+    return (await lstat(candidate)).isDirectory();
+  } catch (error) {
+    if (["EACCES", "ENOENT", "ENOTDIR"].includes(error.code)) return false;
+    throw error;
+  }
+}
+
+function defaultReadDirectory(directory) {
+  return readdir(directory, { withFileTypes: true });
 }
 
 function expandHome(candidate, homeDir, pathApi) {
@@ -47,7 +61,7 @@ async function findMacApplication(target, context) {
   if (context.platform !== "darwin") return null;
   for (const marker of target.macApplications) {
     const candidate = expandHome(marker, context.homeDir, context.pathApi);
-    if (await context.pathExists(candidate)) return `application: ${candidate}`;
+    if (await context.pathIsDirectory(candidate)) return `application: ${candidate}`;
   }
   return null;
 }
@@ -62,7 +76,9 @@ async function findExtension(target, context) {
       if (["EACCES", "ENOENT", "ENOTDIR"].includes(error.code)) continue;
       throw error;
     }
-    const names = entries.map((entry) => typeof entry === "string" ? entry : entry.name);
+    const names = entries
+      .filter((entry) => typeof entry === "string" || entry.isDirectory())
+      .map((entry) => typeof entry === "string" ? entry : entry.name);
     if (names.some((name) => name.startsWith(marker.prefix))) {
       return `extension: ${marker.prefix.slice(0, -1)}`;
     }
@@ -76,9 +92,20 @@ export async function detectTools({
   platform = process.platform,
   pathApi = platform === "win32" ? path.win32 : path.posix,
   pathExists = defaultPathExists,
-  readDirectory = readdir,
+  pathIsDirectory,
+  readDirectory = defaultReadDirectory,
 } = {}) {
-  const context = { env, homeDir, platform, pathApi, pathExists, readDirectory };
+  const directoryProbe = pathIsDirectory
+    ?? (pathExists === defaultPathExists ? defaultPathIsDirectory : pathExists);
+  const context = {
+    env,
+    homeDir,
+    platform,
+    pathApi,
+    pathExists,
+    pathIsDirectory: directoryProbe,
+    readDirectory,
+  };
   const detected = [];
   for (const target of TARGETS) {
     const evidence = await findCommand(target, context)

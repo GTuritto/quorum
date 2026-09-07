@@ -27,6 +27,14 @@ test("npm dry-run contains exactly the approved package files", () => {
 
   assert.deepEqual(actual, EXPECTED_PACKAGE_FILES);
   assert.doesNotThrow(() => assertExactPackageFiles(actual));
+  for (const runtimeModule of [
+    "installer/detection.mjs",
+    "installer/identity.mjs",
+    "installer/uninstall.mjs",
+    "installer/version.mjs",
+  ]) {
+    assert.equal(actual.includes(runtimeModule), true, `${runtimeModule} must be published`);
+  }
 });
 
 test("exact package contract reports missing and unexpected files", () => {

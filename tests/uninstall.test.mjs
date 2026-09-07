@@ -102,6 +102,21 @@ test("dry-run plans removal without prompting or writing", async () => {
   });
 });
 
+test("non-interactive uninstall requires --yes and preserves the installation", async () => {
+  await withTempDirectory(async (root) => {
+    const destination = path.join(root, "skills", "quorum");
+    await createQuorum(destination);
+    const results = await uninstallSelected([group(destination)], {
+      cwd: root,
+      input: { isTTY: false },
+      output: { isTTY: false, write() {} },
+    });
+    assert.equal(results[0].status, "failed");
+    assert.match(results[0].error, /not authorized/);
+    await access(destination);
+  });
+});
+
 test("uses one confirmation and refuses destinations changed afterward", async () => {
   await withTempDirectory(async (root) => {
     const first = path.join(root, "first", "quorum");

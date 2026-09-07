@@ -120,6 +120,7 @@ test("rejects conflicting and invalid options", () => {
   assert.throws(() => parseArguments(["--skills-dir", "./skills", "--scope", "user"]), /cannot be used with/);
   assert.throws(() => parseArguments(["--version", "--yes"]), /must be used alone/);
   assert.throws(() => parseArguments(["--help", "--dry-run"]), /must be used alone/);
+  assert.throws(() => parseArguments(["--project-root="]), /requires a value/);
 });
 
 test("version reads only VERSION and exits without a banner or destination access", async () => {
@@ -261,6 +262,25 @@ test("explicit skills directory takes precedence over discovery", async () => {
   assert.equal(plan.groups[0].includeOpenAI, false);
 });
 
+test("install and update output identifies the running source version", async () => {
+  await withTempDirectory(async (homeDir) => {
+    const output = createSink();
+    const errorOutput = createSink();
+    const exitCode = await main({
+      argv: ["--targets", "cursor", "--dry-run"],
+      cwd: homeDir,
+      homeDir,
+      output,
+      errorOutput,
+      sourceRoot,
+    });
+    assert.equal(exitCode, 0);
+    assert.match(output.text(), /Source version: 0\.1\.59/);
+    assert.match(output.text(), /PLAN\s+install/);
+    assert.equal(errorOutput.text(), "");
+  });
+});
+
 test("no-target uninstall never detects supported tools", async () => {
   const plan = await resolveRunPlan(parseArguments(["--uninstall"]), {
     scope: "user",
@@ -300,9 +320,81 @@ test("user-scope Codex uninstall removes current and recognized legacy installat
   });
 });
 
+test("uninstall requires only the running package VERSION, not its install payload", async () => {
+  await withTempDirectory(async (temporaryRoot) => {
+    const sourceOnly = path.join(temporaryRoot, "source");
+    const skillsParent = path.join(temporaryRoot, "portable-skills");
+    const destination = path.join(skillsParent, "quorum");
+    await mkdir(sourceOnly);
+    await mkdir(destination, { recursive: true });
+    await writeFile(path.join(sourceOnly, "VERSION"), "0.1.59\n");
+    await writeFile(path.join(destination, "SKILL.md"), "---\nname: quorum\n---\n");
+    const output = createSink();
+    const errorOutput = createSink();
+    const exitCode = await main({
+      argv: ["--uninstall", "--skills-dir", skillsParent, "--yes"],
+      cwd: temporaryRoot,
+      homeDir: temporaryRoot,
+      output,
+      errorOutput,
+      sourceRoot: sourceOnly,
+    });
+    assert.equal(exitCode, 0);
+    await assert.rejects(readFile(path.join(destination, "SKILL.md")), /ENOENT/);
+    assert.equal(errorOutput.text(), "");
+  });
+});
+
+test("does not report foreign legacy Codex content as a Quorum installation", async () => {
+  await withTempDirectory(async (homeDir) => {
+    const legacy = path.join(homeDir, ".codex", "skills", "quorum");
+    await mkdir(legacy, { recursive: true });
+    await writeFile(path.join(legacy, "SKILL.md"), "---\nname: other\n---\n");
+    const output = createSink();
+    const exitCode = await main({
+      argv: ["--targets", "codex", "--dry-run"],
+      cwd: homeDir,
+      homeDir,
+      env: {},
+      output,
+      errorOutput: createSink(),
+      sourceRoot,
+    });
+    assert.equal(exitCode, 0);
+    assert.doesNotMatch(output.text(), /Legacy Codex installation detected/);
+  });
+});
+
+test("install and update leave a recognized legacy Codex copy unchanged", async () => {
+  await withTempDirectory(async (homeDir) => {
+    const legacy = path.join(homeDir, ".codex", "skills", "quorum");
+    await mkdir(legacy, { recursive: true });
+    const legacySkill = "---\nname: quorum\n---\nlegacy marker\n";
+    await writeFile(path.join(legacy, "SKILL.md"), legacySkill);
+    await writeFile(path.join(legacy, "VERSION"), "0.1.40\n");
+
+    for (const argv of [
+      ["--targets", "codex", "--yes"],
+      ["--update", "--targets", "codex", "--yes"],
+    ]) {
+      assert.equal(await main({
+        argv,
+        cwd: homeDir,
+        homeDir,
+        env: {},
+        output: createSink(),
+        errorOutput: createSink(),
+        sourceRoot,
+      }), 0);
+    }
+    assert.equal(await readFile(path.join(legacy, "SKILL.md"), "utf8"), legacySkill);
+    assert.equal((await readFile(path.join(legacy, "VERSION"), "utf8")).trim(), "0.1.40");
+  });
+});
+
 test("validates versions and source payload", async () => {
   const source = await validateSource(sourceRoot);
-  assert.equal(source.version, "0.1.58");
+  assert.equal(source.version, "0.1.59");
   assert.deepEqual(await payloadFiles(sourceRoot, false), [
     "SKILL.md",
     "VERSION",
@@ -326,7 +418,7 @@ test("installs selected targets with target-specific payloads", async () => {
 
     const codex = path.join(homeDir, ".agents", "skills", "quorum");
     const claude = path.join(homeDir, ".claude", "skills", "quorum");
-    assert.equal((await readFile(path.join(codex, "VERSION"), "utf8")).trim(), "0.1.58");
+    assert.equal((await readFile(path.join(codex, "VERSION"), "utf8")).trim(), "0.1.59");
     assert.equal((await readFile(path.join(codex, "agents", "openai.yaml"), "utf8")).includes("Quorum"), true);
     await assert.rejects(readFile(path.join(claude, "agents", "openai.yaml")), /ENOENT/);
   });
@@ -455,6 +547,29 @@ test("refuses a destination that changes after confirmation", async () => {
     assert.equal(result.status, "refused");
     assert.equal(result.reason, "destination changed");
     assert.equal((await readFile(path.join(destination, "VERSION"), "utf8")).trim(), "0.1.56");
+  });
+});
+
+test("refuses changed modified content even when identity and version stay the same", async () => {
+  await withTempDirectory(async (homeDir) => {
+    const destination = path.join(homeDir, ".cursor", "skills", "quorum");
+    await mkdir(destination, { recursive: true });
+    await writeFile(path.join(destination, "SKILL.md"), "---\nname: quorum\n---\nfirst edit\n");
+    await writeFile(path.join(destination, "VERSION"), "0.1.57\n");
+    const result = (await installSelected({
+      sourceRoot,
+      targetIds: ["cursor"],
+      scope: "user",
+      homeDir,
+      operation: "update",
+      confirmReplacement: async () => {
+        await writeFile(path.join(destination, "SKILL.md"), "---\nname: quorum\n---\nsecond edit\n");
+        return true;
+      },
+    }))[0];
+    assert.equal(result.status, "refused");
+    assert.equal(result.reason, "destination changed");
+    assert.match(await readFile(path.join(destination, "SKILL.md"), "utf8"), /second edit/);
   });
 });
 

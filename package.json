@@ -1,6 +1,6 @@
 {
   "name": "quorum-skill",
-  "version": "0.1.58",
+  "version": "0.1.59",
   "description": "Adaptive multi-perspective reasoning skill for AI coding agents.",
   "type": "module",
   "license": "MIT",
@@ -25,9 +25,13 @@
     "agents/openai.yaml",
     "install.ps1",
     "install.sh",
+    "installer/detection.mjs",
+    "installer/identity.mjs",
     "installer/install.mjs",
     "installer/selector.mjs",
     "installer/targets.mjs",
+    "installer/uninstall.mjs",
+    "installer/version.mjs",
     "references/codex-adapter.md",
     "references/protocol.sudo.md"
   ],

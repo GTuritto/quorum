@@ -34,7 +34,7 @@ test("builds matching tgz, zip, and SHA256SUMS", async () => {
     const outputDirectory = path.join(temporaryRoot, "dist");
     const result = await buildDistribution({ root, outputDirectory });
 
-    assert.equal(result.version, "0.1.58");
+    assert.equal(result.version, "0.1.59");
     assert.deepEqual(result.packageFiles, EXPECTED_PACKAGE_FILES);
 
     const tarEntries = execFileSync("tar", ["-tzf", result.tgzPath], {
@@ -85,7 +85,7 @@ test("rejects mismatched versions before clearing distribution output", async ()
   });
 });
 
-test("runs help and dry-run from the packed npm executable", async () => {
+test("runs version and maintenance dry-runs from the packed npm executable", async () => {
   await withTempDirectory(async (temporaryRoot) => {
     const result = await buildDistribution({
       root,
@@ -100,16 +100,15 @@ test("runs help and dry-run from the packed npm executable", async () => {
       npm_config_cache: path.join(temporaryRoot, "npm-cache"),
     };
 
-    const help = runNpm([
+    const version = runNpm([
       "exec",
       "--yes",
       `--package=${result.tgzPath}`,
       "--",
       "quorum-skill",
-      "--help",
+      "--version",
     ], { cwd: workDirectory, env: environment });
-    assert.match(help, /QUORUM v0\.1\.58/);
-    assert.match(help, /quorum-skill \[options\]/);
+    assert.equal(version, "quorum-skill 0.1.59\n");
 
     const dryRun = runNpm([
       "exec",
@@ -128,5 +127,40 @@ test("runs help and dry-run from the packed npm executable", async () => {
     assert.match(dryRun, /Targets: codex, cursor/);
     await assert.rejects(access(path.join(projectRoot, ".agents", "skills", "quorum")));
     await assert.rejects(access(path.join(projectRoot, ".cursor", "skills", "quorum")));
+
+    const updateDryRun = runNpm([
+      "exec",
+      "--yes",
+      `--package=${result.tgzPath}`,
+      "--",
+      "quorum-skill",
+      "--update",
+      "--targets",
+      "codex",
+      "--scope",
+      "project",
+      "--project-root",
+      projectRoot,
+      "--dry-run",
+    ], { cwd: workDirectory, env: environment });
+    assert.match(updateDryRun, /SKIPPED.*not installed/);
+
+    const uninstallDryRun = runNpm([
+      "exec",
+      "--yes",
+      `--package=${result.tgzPath}`,
+      "--",
+      "quorum-skill",
+      "--uninstall",
+      "--targets",
+      "codex",
+      "--scope",
+      "project",
+      "--project-root",
+      projectRoot,
+      "--dry-run",
+    ], { cwd: workDirectory, env: environment });
+    assert.match(uninstallDryRun, /SKIPPED.*missing/);
+    await assert.rejects(access(path.join(projectRoot, ".agents", "skills", "quorum")));
   });
 });

@@ -22,7 +22,7 @@ test("the real entry point reports the supported Node.js boundary", () => {
   }
 
   assert.equal(result.status, 0);
-  assert.match(result.stdout, /QUORUM v0\.1\.58/);
+  assert.match(result.stdout, /QUORUM v0\.1\.59/);
   assert.match(result.stdout, /quorum-skill \[options\]/);
   assert.equal(result.stderr, "");
 });

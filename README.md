@@ -7,7 +7,7 @@
 | |_| || |_| || |_| ||  _ < | |_| || |  | |
  \__\_\ \___/  \___/ |_| \_\ \___/ |_|  |_|
 
-                    QUORUM v0.1.58
+                    QUORUM v0.1.59
 ```
 
 An adaptive multi-perspective reasoning skill for AI coding agents.
@@ -26,14 +26,17 @@ Quorum helps an assistant examine difficult, ambiguous, or consequential decisio
 - Safe inference for reversible decisions and one focused question when required information cannot be inferred safely
 - Portable installer for Codex, Claude Code, Antigravity, VS Code, and Cursor
 - Keyboard and mouse multi-select target picker
-- Dry runs, atomic placement, and recoverable updates
+- Automatic discovery of existing installations and supported tools
+- Version-aware updates, dry runs, atomic placement, and recoverable backups
+- Guarded permanent uninstall
 
 Quorum is a reasoning protocol, not evidence that several models participated. It never claims distinct-model agreement unless distinct models were actually invoked and verified.
 
 ## Requirements
 
 - Node.js 18 or later
-- A terminal for the interactive selector, or `--targets`/`--all` for non-interactive installation
+- A terminal for interactive target or custom-path input, or explicit target
+  options for non-interactive installation
 
 The installer has no third-party package dependencies.
 
@@ -48,14 +51,14 @@ npx quorum-skill
 Pin the exact release when reproducibility matters:
 
 ```sh
-npx quorum-skill@0.1.58
+npx quorum-skill@0.1.59
 ```
 
 `npx` may ask before downloading an uncached package. Put `-y` before the
 package name to suppress that npm prompt:
 
 ```sh
-npx -y quorum-skill@0.1.58 --all --dry-run
+npx -y quorum-skill@0.1.59 --all --dry-run
 ```
 
 This does not suppress Quorum's replacement confirmation. Pass Quorum's
@@ -63,14 +66,14 @@ This does not suppress Quorum's replacement confirmation. Pass Quorum's
 
 ### Manual archive installation
 
-Download `quorum-skill-0.1.58.tgz` or `quorum-skill-0.1.58.zip` and
-`SHA256SUMS` from the [v0.1.58 release](https://github.com/GTuritto/quorum/releases/tag/v0.1.58).
+Download `quorum-skill-0.1.59.tgz` or `quorum-skill-0.1.59.zip` and
+`SHA256SUMS` from the [v0.1.59 release](https://github.com/GTuritto/quorum/releases/tag/v0.1.59).
 
 On macOS or Linux:
 
 ```sh
-grep 'quorum-skill-0.1.58.tgz' SHA256SUMS | shasum -a 256 -c - &&
-tar -xzf quorum-skill-0.1.58.tgz &&
+grep 'quorum-skill-0.1.59.tgz' SHA256SUMS | shasum -a 256 -c - &&
+tar -xzf quorum-skill-0.1.59.tgz &&
 cd package &&
 ./install.sh
 ```
@@ -78,18 +81,28 @@ cd package &&
 On Windows PowerShell:
 
 ```powershell
-$expected = (Select-String "quorum-skill-0.1.58.zip" SHA256SUMS).Line.Split()[0]
-$actual = (Get-FileHash quorum-skill-0.1.58.zip -Algorithm SHA256).Hash.ToLower()
+$expected = (Select-String "quorum-skill-0.1.59.zip" SHA256SUMS).Line.Split()[0]
+$actual = (Get-FileHash quorum-skill-0.1.59.zip -Algorithm SHA256).Hash.ToLower()
 if ($actual -ne $expected) { throw "Checksum verification failed" }
-Expand-Archive quorum-skill-0.1.58.zip -DestinationPath .
-Set-Location .\quorum-skill-0.1.58
+Expand-Archive quorum-skill-0.1.59.zip -DestinationPath .
+Set-Location .\quorum-skill-0.1.59
 .\install.ps1
 ```
 
 The compact assets contain the installer and skill payload. GitHub's source
 archives contain the complete development repository.
 
-With no target flags, the installer opens this selector:
+On a first installation without target flags, Quorum detects supported tools
+and installs for all detected targets. It requires target-specific evidence.
+For example, the VS Code target requires the Copilot CLI or an installed
+`github.copilot-chat` extension. VS Code alone does not qualify.
+
+If Quorum finds no supported tool, an interactive terminal asks for a parent
+skills directory and appends `quorum`. A non-interactive run exits with guidance
+to use `--skills-dir`, `--targets`, or `--all`.
+
+A normal no-target run opens the selector when it finds an existing managed
+Quorum installation:
 
 ```text
 Select one or more targets:
@@ -131,7 +144,7 @@ Install into an explicit project:
 npx quorum-skill --all --project-root /path/to/project --yes
 ```
 
-`--targets` and `--all` skip the interactive selector.
+`--targets`, `--all`, automatic detection, and `--skills-dir` skip the selector.
 
 ### Options
 
@@ -141,8 +154,13 @@ npx quorum-skill --all --project-root /path/to/project --yes
 | `--all` | Select every supported target. |
 | `--scope user\|project` | Install user-wide, the default, or into a project. |
 | `--project-root PATH` | Set the project destination and imply project scope. |
+| `--skills-dir PATH` | Use an explicit parent skills directory and append `quorum`. |
+| `--update` | Apply the running package to eligible existing installations. |
+| `--upgrade` | Exact alias for `--update`. |
+| `--uninstall` | Permanently remove recognized Quorum installations. |
+| `--version` | Print the running package version without scanning destinations. |
 | `--dry-run` | Show planned actions without writing files. |
-| `--yes` | Authorize replacement of differing installations. |
+| `--yes` | Confirm eligible replacement or permanent removal. |
 | `--help` | Show command help. |
 
 ### Installation paths
@@ -156,6 +174,66 @@ npx quorum-skill --all --project-root /path/to/project --yes
 | Cursor | `~/.cursor/skills/quorum` | `.cursor/skills/quorum` |
 
 When targets share a project destination, Quorum writes one copy and reports every consumer.
+
+### Version and updates
+
+Show the version supplied by the running package:
+
+```sh
+npx quorum-skill --version
+```
+
+Update every managed installation that Quorum finds:
+
+```sh
+npx quorum-skill --update
+```
+
+`--upgrade` is an exact alias. The installer performs no network request and
+does not choose a release. npm selects the package first, so this command
+applies version 0.1.59 explicitly:
+
+```sh
+npx quorum-skill@0.1.59 --update
+```
+
+An explicit update target stays absent when it is not installed:
+
+```sh
+npx quorum-skill --update --targets codex
+```
+
+To update a custom installation, pass the same parent directory used to
+install it:
+
+```sh
+npx quorum-skill --update --skills-dir /path/to/skills
+```
+
+### Permanent uninstall
+
+Preview removal first:
+
+```sh
+npx quorum-skill --uninstall --all --dry-run
+```
+
+Remove recognized installations permanently:
+
+```sh
+npx quorum-skill --uninstall --all --yes
+```
+
+Without targets, `--uninstall` removes the recognized current and legacy
+installations it discovers. User-scope Codex removal also includes a recognized
+legacy copy at `${CODEX_HOME:-~/.codex}/skills/quorum`. Project-scope removal
+never reaches into that user path. `--skills-dir` removes only its exact
+`quorum` child.
+
+Uninstall creates no backup. It preserves parent directories, sibling skills,
+and timestamped update backups. It refuses foreign content and a directory
+that contains the current working directory. For a recognized symbolic link,
+it removes only the link and preserves its target.
 
 ## Use Quorum
 
@@ -190,12 +268,20 @@ For full runs, candidate branches receive only the problem, necessary context, a
 
 ## Update safety
 
-- Identical installations are skipped.
-- Differing installations require confirmation unless `--yes` is present.
-- Existing content is moved to a timestamped sibling backup before replacement.
-- The new payload is staged beside the destination and renamed into place.
-- Backups are never removed automatically.
-- A legacy Codex copy under `${CODEX_HOME:-~/.codex}/skills/quorum` is reported but never changed.
+- Missing destinations install during normal installation. Explicit update
+  targets remain missing.
+- Current identical installations are skipped.
+- Older, modified, or unknown-version Quorum installations require confirmation
+  unless `--yes` is present.
+- Newer installations are never downgraded.
+- Foreign files and directories and user-managed symbolic links are never
+  replaced.
+- Eligible replacements move the existing installation to a timestamped sibling
+  backup, stage the new payload, and place it atomically.
+- A legacy Codex copy under `${CODEX_HOME:-~/.codex}/skills/quorum` remains
+  read-only during install and update.
+- Every destination is checked again before mutation. A changed destination is
+  refused.
 
 Use `--dry-run` before a broad or automated installation.
 
@@ -205,7 +291,10 @@ Use `--dry-run` before a broad or automated installation.
 npm test
 ```
 
-The suite covers target paths, CLI parsing, selector state, split terminal escape sequences, mouse clicks, safe replacement, partial failure, payload contents, and version agreement.
+The suite covers target paths, conservative tool detection, CLI routing,
+selector state, split terminal escape sequences, mouse clicks, version policy,
+safe replacement, permanent uninstall, partial failure, packed execution,
+payload contents, and version agreement.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution steps and [SECURITY.md](SECURITY.md) for private vulnerability reporting.
 

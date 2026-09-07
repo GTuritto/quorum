@@ -17,6 +17,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { formatBanner, runSelector } from "./selector.mjs";
+import { inspectQuorumPath } from "./identity.mjs";
 import {
   detectTools,
   discoverInstallations,
@@ -28,7 +29,7 @@ import {
   groupDestinations,
   parseTargetList,
 } from "./targets.mjs";
-import { parseSemanticVersion } from "./version.mjs";
+import { compareSemanticVersions, parseSemanticVersion } from "./version.mjs";
 
 const SOURCE_ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const COMMON_PAYLOAD = ["SKILL.md", "VERSION", "references"];
@@ -268,27 +269,121 @@ async function defaultConfirm(destination, { input, output }) {
   }
 }
 
-export async function installDestination(group, options) {
-  const { sourceRoot, dryRun, yes, now = () => new Date(), input, output } = options;
+export async function inspectDestination(group, {
+  sourceRoot,
+  sourceVersion,
+} = {}) {
+  const resolvedSourceVersion = sourceVersion
+    ?? (await readFile(path.join(sourceRoot, "VERSION"), "utf8")).trim();
   const files = await payloadFiles(sourceRoot, group.includeOpenAI);
-  const existingKind = await pathKind(group.destination);
-  const matches = existingKind === "directory"
+  const identity = await inspectQuorumPath(group.destination);
+  let installedVersion = null;
+  if (identity.recognized) {
+    try {
+      const value = (await readFile(path.join(group.destination, "VERSION"), "utf8")).trim();
+      installedVersion = parseSemanticVersion(value) ? value : null;
+    } catch (error) {
+      if (!["EACCES", "ENOENT", "ENOTDIR"].includes(error.code)) throw error;
+    }
+  }
+  const contentMatches = identity.kind === "directory" && identity.recognized
     ? await destinationMatches(sourceRoot, group.destination, files)
     : false;
+  return {
+    kind: identity.kind,
+    recognized: identity.recognized,
+    identityReason: identity.reason,
+    resolvedPath: identity.resolvedPath,
+    sourceVersion: resolvedSourceVersion,
+    installedVersion,
+    contentMatches,
+    files,
+  };
+}
 
-  if (matches) return { ...group, status: "skipped" };
-  const action = existingKind === "missing" ? "install" : "update";
-  if (dryRun) return { ...group, status: "planned", action };
+export function classifyDestination(snapshot, operation = "install") {
+  if (snapshot.kind === "missing") {
+    return operation === "update"
+      ? { status: "skipped", reason: "not installed" }
+      : { action: "install", requiresConfirmation: false };
+  }
+  if (snapshot.kind === "symlink") {
+    return { status: "refused", reason: "symbolic link" };
+  }
+  if (snapshot.kind !== "directory" || !snapshot.recognized) {
+    return { status: "refused", reason: "foreign content" };
+  }
+  if (!snapshot.installedVersion) {
+    return {
+      action: "update",
+      requiresConfirmation: true,
+      reason: "unknown installed version",
+    };
+  }
 
-  if (action === "update" && !yes) {
+  const comparison = compareSemanticVersions(snapshot.installedVersion, snapshot.sourceVersion);
+  if (comparison > 0) {
+    return {
+      status: "refused",
+      reason: `installed version ${snapshot.installedVersion} is newer than source ${snapshot.sourceVersion}`,
+    };
+  }
+  if (comparison === 0 && snapshot.contentMatches) {
+    return { status: "skipped", reason: "already current" };
+  }
+  return {
+    action: "update",
+    requiresConfirmation: true,
+    reason: comparison < 0 ? "older version" : "modified content",
+  };
+}
+
+function snapshotSignature(snapshot) {
+  return JSON.stringify({
+    kind: snapshot.kind,
+    recognized: snapshot.recognized,
+    resolvedPath: snapshot.resolvedPath ?? null,
+    installedVersion: snapshot.installedVersion,
+    contentMatches: snapshot.contentMatches,
+  });
+}
+
+export async function installDestination(group, options) {
+  const {
+    sourceRoot,
+    sourceVersion,
+    operation = "install",
+    dryRun,
+    yes,
+    now = () => new Date(),
+    input,
+    output,
+  } = options;
+  const inspect = options.inspectDestination ?? inspectDestination;
+  const snapshot = await inspect(group, { sourceRoot, sourceVersion });
+  const policy = classifyDestination(snapshot, operation);
+  const resultContext = {
+    ...group,
+    sourceVersion: snapshot.sourceVersion,
+    installedVersion: snapshot.installedVersion,
+  };
+  if (policy.status) return { ...resultContext, ...policy };
+  if (dryRun) return { ...resultContext, status: "planned", action: policy.action, reason: policy.reason };
+
+  if (policy.requiresConfirmation && !yes) {
     const confirm = options.confirmReplacement ?? ((destination) => defaultConfirm(destination, { input, output }));
     if (!(await confirm(group.destination))) {
       return {
-        ...group,
+        ...resultContext,
         status: "failed",
         error: "replacement was not authorized; rerun interactively or pass --yes",
       };
     }
+  }
+
+  const confirmedSnapshot = await inspect(group, { sourceRoot, sourceVersion: snapshot.sourceVersion });
+  if (snapshotSignature(snapshot) !== snapshotSignature(confirmedSnapshot)) {
+    return { ...resultContext, status: "refused", reason: "destination changed" };
   }
 
   const parent = path.dirname(group.destination);
@@ -297,8 +392,16 @@ export async function installDestination(group, options) {
   let backup;
 
   try {
-    await copyPayload(sourceRoot, stage, files);
-    if (action === "update") {
+    await copyPayload(sourceRoot, stage, snapshot.files);
+    const placementSnapshot = await inspect(group, {
+      sourceRoot,
+      sourceVersion: snapshot.sourceVersion,
+    });
+    if (snapshotSignature(snapshot) !== snapshotSignature(placementSnapshot)) {
+      await rm(stage, { recursive: true, force: true });
+      return { ...resultContext, status: "refused", reason: "destination changed" };
+    }
+    if (policy.action === "update") {
       backup = await availableBackupPath(group.destination, now());
       await rename(group.destination, backup);
     }
@@ -310,7 +413,11 @@ export async function installDestination(group, options) {
       }
       throw error;
     }
-    return { ...group, status: action === "install" ? "installed" : "updated", backup };
+    return {
+      ...resultContext,
+      status: policy.action === "install" ? "installed" : "updated",
+      backup,
+    };
   } catch (error) {
     if ((await pathKind(stage)) !== "missing") await rm(stage, { recursive: true, force: true });
     throw error;
@@ -330,6 +437,8 @@ export async function installSelected({
   now,
   input = process.stdin,
   output = process.stdout,
+  operation = "install",
+  sourceVersion,
 }) {
   const groups = selectedGroups ?? groupDestinations(targetIds, { scope, homeDir, projectRoot });
   const results = [];
@@ -338,6 +447,8 @@ export async function installSelected({
     try {
       results.push(await installDestination(group, {
         sourceRoot,
+        sourceVersion,
+        operation,
         dryRun,
         yes,
         confirmReplacement,
@@ -536,8 +647,12 @@ function formatResult(result) {
   const consumers = result.labels.join(", ");
   if (result.status === "planned") return `PLAN      ${result.action} ${result.destination} (${consumers})`;
   if (result.status === "installed") return `INSTALLED ${result.destination} (${consumers})`;
-  if (result.status === "updated") return `UPDATED   ${result.destination} (${consumers})\n           Backup: ${result.backup}`;
-  if (result.status === "skipped") return `SKIPPED   ${result.destination} (${consumers}, already current)`;
+  if (result.status === "updated") {
+    const versions = `installed ${result.installedVersion ?? "unknown"}, source ${result.sourceVersion}`;
+    return `UPDATED   ${result.destination} (${consumers}; ${versions})\n           Backup: ${result.backup}`;
+  }
+  if (result.status === "skipped") return `SKIPPED   ${result.destination} (${consumers}; ${result.reason})`;
+  if (result.status === "refused") return `REFUSED   ${result.destination} (${consumers}): ${result.reason}`;
   return `FAILED    ${result.destination} (${consumers}): ${result.error}`;
 }
 
@@ -599,6 +714,7 @@ export async function main({
 
     const context = {
       sourceRoot,
+      sourceVersion: source.version,
       targetIds: plan.targetIds,
       groups: plan.groups,
       scope: options.scope,
@@ -624,7 +740,7 @@ export async function main({
     results.forEach((result) => output.write(`${formatResult(result)}\n`));
     await reportLegacyCodex({ targetIds: plan.targetIds, scope: options.scope, homeDir, env, output });
 
-    return results.some((result) => result.status === "failed") ? 1 : 0;
+    return results.some((result) => ["failed", "refused"].includes(result.status)) ? 1 : 0;
   } catch (error) {
     errorOutput.write(`Error: ${error.message}\n`);
     return 1;

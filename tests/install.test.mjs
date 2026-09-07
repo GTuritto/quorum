@@ -324,11 +324,11 @@ test("skips identical content and backs up an authorized replacement", async () 
     assert.equal((await installSelected(options))[0].status, "skipped");
 
     const destination = path.join(homeDir, ".cursor", "skills", "quorum");
-    await writeFile(path.join(destination, "SKILL.md"), "changed\n");
+    await writeFile(path.join(destination, "SKILL.md"), "---\nname: quorum\n---\n# changed\n");
     const updated = (await installSelected(options))[0];
     assert.equal(updated.status, "updated");
     assert.equal(updated.backup, `${destination}.backup-20260906T101112Z`);
-    assert.equal(await readFile(path.join(updated.backup, "SKILL.md"), "utf8"), "changed\n");
+    assert.match(await readFile(path.join(updated.backup, "SKILL.md"), "utf8"), /# changed/);
   });
 });
 
@@ -336,7 +336,8 @@ test("refuses replacement without authorization", async () => {
   await withTempDirectory(async (homeDir) => {
     const destination = path.join(homeDir, ".cursor", "skills", "quorum");
     await mkdir(destination, { recursive: true });
-    await writeFile(path.join(destination, "SKILL.md"), "local\n");
+    await writeFile(path.join(destination, "SKILL.md"), "---\nname: quorum\n---\nlocal\n");
+    await writeFile(path.join(destination, "VERSION"), "0.1.57\n");
     const result = (await installSelected({
       sourceRoot,
       targetIds: ["cursor"],
@@ -347,7 +348,74 @@ test("refuses replacement without authorization", async () => {
     }))[0];
     assert.equal(result.status, "failed");
     assert.match(result.error, /not authorized/);
-    assert.equal(await readFile(path.join(destination, "SKILL.md"), "utf8"), "local\n");
+    assert.match(await readFile(path.join(destination, "SKILL.md"), "utf8"), /name: quorum/);
+  });
+});
+
+test("refuses foreign content and a newer installation even with yes", async () => {
+  await withTempDirectory(async (homeDir) => {
+    const destination = path.join(homeDir, ".cursor", "skills", "quorum");
+    await mkdir(destination, { recursive: true });
+    await writeFile(path.join(destination, "SKILL.md"), "---\nname: other\n---\n");
+    let result = (await installSelected({
+      sourceRoot,
+      targetIds: ["cursor"],
+      scope: "user",
+      homeDir,
+      yes: true,
+    }))[0];
+    assert.equal(result.status, "refused");
+    assert.equal(result.reason, "foreign content");
+
+    await writeFile(path.join(destination, "SKILL.md"), "---\nname: quorum\n---\n");
+    await writeFile(path.join(destination, "VERSION"), "0.2.0\n");
+    result = (await installSelected({
+      sourceRoot,
+      targetIds: ["cursor"],
+      scope: "user",
+      homeDir,
+      yes: true,
+      operation: "update",
+    }))[0];
+    assert.equal(result.status, "refused");
+    assert.match(result.reason, /newer than source/);
+  });
+});
+
+test("explicit update skips a missing installation", async () => {
+  await withTempDirectory(async (homeDir) => {
+    const result = (await installSelected({
+      sourceRoot,
+      targetIds: ["cursor"],
+      scope: "user",
+      homeDir,
+      operation: "update",
+    }))[0];
+    assert.equal(result.status, "skipped");
+    assert.equal(result.reason, "not installed");
+  });
+});
+
+test("refuses a destination that changes after confirmation", async () => {
+  await withTempDirectory(async (homeDir) => {
+    const destination = path.join(homeDir, ".cursor", "skills", "quorum");
+    await mkdir(destination, { recursive: true });
+    await writeFile(path.join(destination, "SKILL.md"), "---\nname: quorum\n---\nlocal\n");
+    await writeFile(path.join(destination, "VERSION"), "0.1.57\n");
+    const result = (await installSelected({
+      sourceRoot,
+      targetIds: ["cursor"],
+      scope: "user",
+      homeDir,
+      operation: "update",
+      confirmReplacement: async () => {
+        await writeFile(path.join(destination, "VERSION"), "0.1.56\n");
+        return true;
+      },
+    }))[0];
+    assert.equal(result.status, "refused");
+    assert.equal(result.reason, "destination changed");
+    assert.equal((await readFile(path.join(destination, "VERSION"), "utf8")).trim(), "0.1.56");
   });
 });
 

@@ -23,9 +23,9 @@ test("trusted publish workflow uses constrained GitHub OIDC", async () => {
   assert.match(workflow, /npm test/);
   assert.match(workflow, /npm run dist/);
   assert.match(workflow, /npm publish "\.\/dist\/quorum-skill-\$\{RELEASE_VERSION\}\.tgz" --access public/);
-  assert.match(workflow, /actions\/upload-artifact@v4/);
+  assert.match(workflow, /actions\/upload-artifact@v6/);
   assert.ok(
-    workflow.indexOf("actions/upload-artifact@v4") < workflow.indexOf("npm publish"),
+    workflow.indexOf("actions/upload-artifact@v6") < workflow.indexOf("npm publish"),
     "verified artifacts must be preserved before the immutable npm publish",
   );
   assert.doesNotMatch(workflow, /NODE_AUTH_TOKEN|NPM_TOKEN|secrets\./);

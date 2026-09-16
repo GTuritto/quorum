@@ -1,6 +1,6 @@
 {
   "name": "quorum-skill",
-  "version": "0.1.60",
+  "version": "0.1.61",
   "description": "Adaptive multi-perspective reasoning skill for AI coding agents.",
   "keywords": [
     "ai",

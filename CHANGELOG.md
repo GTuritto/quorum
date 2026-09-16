@@ -7,6 +7,14 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.1.61] - 2026-09-16
+
+### Fixed
+
+- Refresh the README shipped to npm with current installation and update
+  commands, the npm version badge, and accurate archive availability.
+- Documentation-only patch; installer and deliberation behavior are unchanged.
+
 ## [0.1.60] - 2026-09-16
 
 ### Added
@@ -87,7 +95,8 @@ Release dates use UTC; npm recorded publication at 22:57:40 UTC.
 - Automated unit and integration coverage for installer behavior and payload
   integrity.
 
-[Unreleased]: https://github.com/GTuritto/quorum/compare/v0.1.60...HEAD
+[Unreleased]: https://github.com/GTuritto/quorum/compare/v0.1.61...HEAD
+[0.1.61]: https://github.com/GTuritto/quorum/compare/v0.1.60...v0.1.61
 [0.1.60]: https://github.com/GTuritto/quorum/compare/v0.1.59...v0.1.60
 [0.1.59]: https://github.com/GTuritto/quorum/compare/v0.1.58...v0.1.59
 [0.1.58]: https://github.com/GTuritto/quorum/compare/v0.1.57...v0.1.58

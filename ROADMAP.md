@@ -65,7 +65,7 @@ The design is approved in
 Published on 2026-09-16 (UTC) as
 [`quorum-skill@0.1.60`](https://www.npmjs.com/package/quorum-skill/v/0.1.60)
 through the [version-tag workflow](https://github.com/GTuritto/quorum/actions/runs/35159952498),
-with signed provenance. npm now marks this version as latest.
+with signed provenance.
 
 ### Cost-aware deliberation
 
@@ -94,6 +94,11 @@ with signed provenance. npm now marks this version as latest.
   insufficient, and disclose the degradation when it affects confidence.
 - Add deterministic routing and regression tests covering direct, mini, full,
   repeated-decision, and budget-degradation behavior.
+
+## Patch release: 0.1.61
+
+Documentation-only refresh of the npm README, version badge, and current
+installation examples. Installer and deliberation behavior are unchanged.
 
 ## Planned milestone: 0.2.0
 

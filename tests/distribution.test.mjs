@@ -34,7 +34,7 @@ test("builds matching tgz, zip, and SHA256SUMS", async () => {
     const outputDirectory = path.join(temporaryRoot, "dist");
     const result = await buildDistribution({ root, outputDirectory });
 
-    assert.equal(result.version, "0.1.60");
+    assert.equal(result.version, "0.1.61");
     assert.deepEqual(result.packageFiles, EXPECTED_PACKAGE_FILES);
 
     const tarEntries = execFileSync("tar", ["-tzf", result.tgzPath], {
@@ -108,7 +108,7 @@ test("runs version and maintenance dry-runs from the packed npm executable", asy
       "quorum-skill",
       "--version",
     ], { cwd: workDirectory, env: environment });
-    assert.equal(version, "quorum-skill 0.1.60\n");
+    assert.equal(version, "quorum-skill 0.1.61\n");
 
     const dryRun = runNpm([
       "exec",

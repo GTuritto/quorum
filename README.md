@@ -7,12 +7,12 @@
 | |_| || |_| || |_| ||  _ < | |_| || |  | |
  \__\_\ \___/  \___/ |_| \_\ \___/ |_|  |_|
 
-                    QUORUM v0.1.60
+                    QUORUM v0.1.61
 ```
 
 An adaptive multi-perspective reasoning skill for AI coding agents.
 
-**0.1.60 is available on npm**, with signed build provenance.
+Current package: **0.1.61**. Published builds include signed provenance.
 
 [![npm version](https://img.shields.io/npm/v/quorum-skill)](https://www.npmjs.com/package/quorum-skill)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -67,14 +67,14 @@ npx quorum-skill
 Pin the exact release when reproducibility matters:
 
 ```sh
-npx quorum-skill@0.1.60
+npx quorum-skill@0.1.61
 ```
 
 `npx` may ask before downloading an uncached package. Put `-y` before the
 package name to suppress that npm prompt:
 
 ```sh
-npx -y quorum-skill@0.1.60 --all --dry-run
+npx -y quorum-skill@0.1.61 --all --dry-run
 ```
 
 This does not suppress Quorum's replacement confirmation. Pass Quorum's
@@ -85,13 +85,13 @@ This does not suppress Quorum's replacement confirmation. Pass Quorum's
 Download the published tarball from npm into an empty working directory:
 
 ```sh
-npm pack quorum-skill@0.1.60
+npm pack quorum-skill@0.1.61
 ```
 
 On macOS or Linux:
 
 ```sh
-tar -xzf quorum-skill-0.1.60.tgz &&
+tar -xzf quorum-skill-0.1.61.tgz &&
 cd package &&
 ./install.sh
 ```
@@ -100,15 +100,15 @@ On Windows PowerShell with `tar` available, run each command after the previous
 one succeeds:
 
 ```powershell
-tar -xzf quorum-skill-0.1.60.tgz
+tar -xzf quorum-skill-0.1.61.tgz
 Set-Location .\package
 .\install.ps1
 ```
 
-The tarball includes the installer and skill payload. The `v0.1.60` Git tag
-exists, but no GitHub release with attached ZIP/checksum assets has been
-created. The publishing workflow retains its build archives temporarily as
-Actions artifacts; `npm run dist` also builds archives from a source checkout.
+The tarball includes the installer and skill payload. Version-tag publishing
+does not automatically create a GitHub release or attach ZIP/checksum assets.
+The publishing workflow retains its build archives temporarily as Actions
+artifacts; `npm run dist` also builds archives from a source checkout.
 Use npm for the published package.
 
 On a first installation without target flags, Quorum detects supported tools
@@ -210,10 +210,10 @@ npx quorum-skill --update
 
 `--upgrade` is an exact alias. The installer performs no network request and
 does not choose a release. npm selects the package first, so this command
-applies version 0.1.60 explicitly:
+applies version 0.1.61 explicitly:
 
 ```sh
-npx quorum-skill@0.1.60 --update
+npx quorum-skill@0.1.61 --update
 ```
 
 An explicit update target stays absent when it is not installed:

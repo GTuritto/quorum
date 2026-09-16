@@ -276,7 +276,7 @@ Direct: Summarize the decision in three bullets.
 
 Quorum activates automatically only when multiple perspectives are likely to improve the result. Simple lookups and low-stakes transformations stay direct.
 
-### Control deliberation (0.1.60)
+### Control deliberation
 
 Ask in natural language; these controls belong in your assistant request, not
 in the npm install command:
@@ -372,8 +372,9 @@ payload contents, and version agreement.
 
 It also checks a development-only deliberation reference policy and consistency
 of the shipped prompt contracts. Those deterministic tests do not prove that
-every assistant follows the protocol. See the source repository's
-`docs/testing/0.1.60-smoke.md` for host smoke scenarios and recorded limitations.
+every assistant follows the protocol. See the
+[verification notes](https://github.com/GTuritto/quorum/blob/main/docs/testing/0.1.60-smoke.md)
+for host smoke scenarios and recorded limitations.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution steps and [SECURITY.md](SECURITY.md) for private vulnerability reporting.
 

@@ -19,7 +19,8 @@ host smoke tests separately check interpretation. The installer remains intact.
 - No new dependencies, Bun, agent service, or deliberation installer flags.
 - No persistent memory, questioning mode, or dynamic specialist routing.
 - Preserve existing roadmap edits and npm keywords.
-- No commit, push, tag, or publication. Work on codex/quorum-0.1.60.
+- Original implementation scope: no commit, push, tag, or publication. Work on
+  codex/quorum-0.1.60; subsequent release authorization is recorded below.
 - A worker cap counts total launches, including failures, not concurrency.
 - Direct and mini launch zero workers; full requires one valid isolated
   candidate and one fresh valid independent review. Coordinator synthesizes.
@@ -95,3 +96,7 @@ docs/testing/0.1.60-smoke.md.
 - Completed: 114 Node tests, installer integration (including available PowerShell
   smoke), archive byte/checksum verification, five Codex host cases, and independent
   review. No open review findings. No commit or publication.
+
+- Subsequent user authorization: commit and push to main, then push v0.1.60.
+  Commit e10e963 is on main and the release tag; publishing succeeded and npm
+  reports 0.1.60 as latest. See ../../testing/0.1.60-smoke.md for evidence.

@@ -58,11 +58,14 @@ The approved design is documented at:
 - Consider explicit backup listing, restoration, and cleanup commands. Never
   remove update backups implicitly.
 
-## In preparation: 0.1.60
+## Released: 0.1.60
 
 The design is approved in
 [`docs/superpowers/specs/2026-09-16-cost-aware-deliberation-design.md`](docs/superpowers/specs/2026-09-16-cost-aware-deliberation-design.md).
-This is a local preparation milestone, not a publication claim.
+Published on 2026-09-16 (UTC) as
+[`quorum-skill@0.1.60`](https://www.npmjs.com/package/quorum-skill/v/0.1.60)
+through the [version-tag workflow](https://github.com/GTuritto/quorum/actions/runs/35159952498),
+with signed provenance. npm now marks this version as latest.
 
 ### Cost-aware deliberation
 
@@ -180,5 +183,5 @@ only after an explicit release-planning decision.
   fallback behavior.
 
 Because npm package versions are immutable, future work will not modify the
-published `0.1.58` or `0.1.59` packages. The approved `0.1.60` work is being
-prepared as a separate release. Publication remains a separate decision.
+published `0.1.58`, `0.1.59`, or `0.1.60` packages. Future changes require
+a new version.

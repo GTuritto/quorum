@@ -1,7 +1,7 @@
 # Quorum 0.1.60: Cost-aware deliberation
 
 Date: 2026-09-16
-Status: Approved and implemented locally; verified, not published
+Status: Approved, implemented, and published as 0.1.60
 
 ## Objective and scope
 
@@ -13,7 +13,9 @@ This release changes the portable skill, protocol, Codex adapter, documentation,
 and verification. It does not introduce an agent service or turn the installer
 into a deliberation CLI. Persistent decision memory belongs to 0.2.0;
 interactive questioning belongs to 0.2.1. Dynamic specialist routing remains
-future work. No commit, push, release tag, or publication is authorized here.
+future work. The original implementation scope excluded commit, push, tag, and
+publication; the user separately authorized those actions after verification.
+See [release evidence](../../testing/0.1.60-smoke.md#release-verification).
 
 ## Approaches considered
 

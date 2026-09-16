@@ -7,12 +7,13 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.1.60] - 2026-09-16
+
 ### Added
 
 - Automatic npm publication on stable version-tag pushes, with matching package
   version and main-branch ancestry checks; manual publishing remains available.
-
-- 0.1.60 preparation: request-scoped auto/direct/mini/full controls,
+- Request-scoped auto/direct/mini/full controls,
   candidate/reviewer targets, and total worker-launch caps.
 - Execution receipts distinguishing requested tiers, actual participation,
   failed launches, provenance, and fallback behavior.
@@ -29,7 +30,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - Keep mini within the current context, reserve capacity for independent review,
   and perform synthesis in the coordinator.
 
-0.1.60 is prepared locally; this section does not claim npm or GitHub publication.
+Published to npm through the `v0.1.60` tag workflow with signed provenance.
+Release dates use UTC; npm recorded publication at 22:57:40 UTC.
 
 ## [0.1.59] - 2026-09-07
 
@@ -85,7 +87,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - Automated unit and integration coverage for installer behavior and payload
   integrity.
 
-[Unreleased]: https://github.com/GTuritto/quorum/compare/v0.1.59...HEAD
+[Unreleased]: https://github.com/GTuritto/quorum/compare/v0.1.60...HEAD
+[0.1.60]: https://github.com/GTuritto/quorum/compare/v0.1.59...v0.1.60
 [0.1.59]: https://github.com/GTuritto/quorum/compare/v0.1.58...v0.1.59
 [0.1.58]: https://github.com/GTuritto/quorum/compare/v0.1.57...v0.1.58
 [0.1.57]: https://github.com/GTuritto/quorum/releases/tag/v0.1.57

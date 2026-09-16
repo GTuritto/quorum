@@ -12,12 +12,9 @@
 
 An adaptive multi-perspective reasoning skill for AI coding agents.
 
-This checkout prepares **0.1.60** locally. The published installation examples
-below remain pinned to **0.1.59** until a new release is published. To try this
-checkout, use `./install.sh --skills-dir /path/to/test-skills --yes` (or
-`install.ps1` on Windows), then load the resulting skill in your assistant.
+**0.1.60 is available on npm**, with signed build provenance.
 
-[![Release](https://img.shields.io/github/v/release/GTuritto/quorum)](https://github.com/GTuritto/quorum/releases/latest)
+[![npm version](https://img.shields.io/npm/v/quorum-skill)](https://www.npmjs.com/package/quorum-skill)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Quorum helps an assistant examine difficult, ambiguous, or consequential decisions through independent candidate perspectives, anonymous review, and concise Chairman synthesis. It uses the least expensive reasoning tier that can produce a reliable answer and preserves uncertainty when the evidence does not support consensus.
@@ -70,14 +67,14 @@ npx quorum-skill
 Pin the exact release when reproducibility matters:
 
 ```sh
-npx quorum-skill@0.1.59
+npx quorum-skill@0.1.60
 ```
 
 `npx` may ask before downloading an uncached package. Put `-y` before the
 package name to suppress that npm prompt:
 
 ```sh
-npx -y quorum-skill@0.1.59 --all --dry-run
+npx -y quorum-skill@0.1.60 --all --dry-run
 ```
 
 This does not suppress Quorum's replacement confirmation. Pass Quorum's
@@ -85,31 +82,34 @@ This does not suppress Quorum's replacement confirmation. Pass Quorum's
 
 ### Manual archive installation
 
-Download `quorum-skill-0.1.59.tgz` or `quorum-skill-0.1.59.zip` and
-`SHA256SUMS` from the [v0.1.59 release](https://github.com/GTuritto/quorum/releases/tag/v0.1.59).
+Download the published tarball from npm into an empty working directory:
+
+```sh
+npm pack quorum-skill@0.1.60
+```
 
 On macOS or Linux:
 
 ```sh
-grep 'quorum-skill-0.1.59.tgz' SHA256SUMS | shasum -a 256 -c - &&
-tar -xzf quorum-skill-0.1.59.tgz &&
+tar -xzf quorum-skill-0.1.60.tgz &&
 cd package &&
 ./install.sh
 ```
 
-On Windows PowerShell:
+On Windows PowerShell with `tar` available, run each command after the previous
+one succeeds:
 
 ```powershell
-$expected = (Select-String "quorum-skill-0.1.59.zip" SHA256SUMS).Line.Split()[0]
-$actual = (Get-FileHash quorum-skill-0.1.59.zip -Algorithm SHA256).Hash.ToLower()
-if ($actual -ne $expected) { throw "Checksum verification failed" }
-Expand-Archive quorum-skill-0.1.59.zip -DestinationPath .
-Set-Location .\quorum-skill-0.1.59
+tar -xzf quorum-skill-0.1.60.tgz
+Set-Location .\package
 .\install.ps1
 ```
 
-The compact assets contain the installer and skill payload. GitHub's source
-archives contain the complete development repository.
+The tarball includes the installer and skill payload. The `v0.1.60` Git tag
+exists, but no GitHub release with attached ZIP/checksum assets has been
+created. The publishing workflow retains its build archives temporarily as
+Actions artifacts; `npm run dist` also builds archives from a source checkout.
+Use npm for the published package.
 
 On a first installation without target flags, Quorum detects supported tools
 and installs for all detected targets. It requires target-specific evidence.
@@ -210,10 +210,10 @@ npx quorum-skill --update
 
 `--upgrade` is an exact alias. The installer performs no network request and
 does not choose a release. npm selects the package first, so this command
-applies version 0.1.59 explicitly:
+applies version 0.1.60 explicitly:
 
 ```sh
-npx quorum-skill@0.1.59 --update
+npx quorum-skill@0.1.60 --update
 ```
 
 An explicit update target stays absent when it is not installed:

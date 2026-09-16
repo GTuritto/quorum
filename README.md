@@ -7,7 +7,7 @@
 | |_| || |_| || |_| ||  _ < | |_| || |  | |
  \__\_\ \___/  \___/ |_| \_\ \___/ |_|  |_|
 
-                    QUORUM v0.1.61
+                    QUORUM v0.1.60
 ```
 
 An adaptive multi-perspective reasoning skill for AI coding agents.

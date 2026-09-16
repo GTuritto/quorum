@@ -12,7 +12,7 @@
 
 An adaptive multi-perspective reasoning skill for AI coding agents.
 
-Current package: **0.1.61**. Published builds include signed provenance.
+Current package: **0.1.60**. Published builds include signed provenance.
 
 [![npm version](https://img.shields.io/npm/v/quorum-skill)](https://www.npmjs.com/package/quorum-skill)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)

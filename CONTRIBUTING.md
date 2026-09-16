@@ -46,6 +46,21 @@ git diff --check
 dist` verifies the exact npm packlist before producing the compact release
 archives and `SHA256SUMS` in `dist/`.
 
+## Publishing a release
+
+Merge the versioned changes and publishing workflow into `main` first. Then
+push a stable version tag, for example `v0.1.60`, on the intended release
+commit. The `Publish npm package` workflow runs automatically on `v*` tag
+pushes, checks the exact X.Y.Z version against `package.json`, and verifies
+that the tagged commit is an ancestor of `origin/main`. Prerelease tags are
+not supported by this stable-release workflow.
+
+The workflow runs tests, builds and uploads archives, then publishes the npm
+tarball using trusted publishing. A merge into main alone does not publish.
+Manual dispatch remains available on `main` with an exact version input.
+Do not rerun a successful publish for the same version: npm versions are
+immutable. This workflow does not create a GitHub release or attach its assets.
+
 ## Commit and pull request guidance
 
 - Use Conventional Commit messages, such as `fix(installer): restore terminal on cancellation`.

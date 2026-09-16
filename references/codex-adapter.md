@@ -29,15 +29,44 @@ Read this reference only when Quorum runs in Codex. The portable protocol remain
 
 ## Worker isolation
 
+Resolve the current request's `level` (auto/direct/mini/full), `candidates`,
+`reviewers`, and `maxWorkers` using the portable protocol before dispatch.
+Leading `Direct:` bypasses optional deliberation and ignores unused controls.
+Otherwise ask one focused clarification for invalid controls before any launch.
+Counts alone do not force full; direct and mini use zero delegated workers.
+Mini uses internal-simulation, not tools masquerading as simulated perspectives.
+
+Use defaults of three candidates and one reviewer. Default maxWorkers is four,
+or the sum of explicitly supplied counts with unspecified counts filled from
+defaults. An explicit cap never raises targets. For cap >= 2, allocate
+reviewers = min(requestedReviewers, cap - 1), then candidates =
+min(requestedCandidates, cap - reviewers). Disclose reduced counts. A full run
+can use one candidate plus one independent reviewer; disclose the reduced
+alternative generation. Do not impose a fixed five-candidate upper limit on
+explicit requests. Host limitations remain binding.
+
+The cap measures total worker launches, including failures and replacements,
+not simultaneous slots. Keep a launch ledger and reserve planned review
+launches before candidates or replacements. Repair malformed output at most
+once in its existing worker; a new worker costs another launch. If the cap is
+below two or isolation is unavailable, degrade full to mini. If mini cannot
+fit the remaining time/reasoning budget, use direct with disclosed uncertainty.
+
 For a full run:
 
-1. Select three cognitive frames by default. Increase to five only when the decision value justifies the added cost.
+1. Select the allocated number of distinct cognitive frames.
 2. Create fresh isolated workers with no prior conversation when the runtime supports that option.
 3. Give each generator only the problem, required context, its frame, the SudoLang generator contract, and a structured output schema.
 4. Forbid evaluation, ranking, tool mutation, and communication with other generators.
 5. Wait for generators in parallel up to the runtime concurrency limit.
 6. If the runtime cannot run every branch concurrently, use fresh waves without sharing earlier outputs. Disclose the limitation when it materially weakens independence.
 7. Normalize outputs and assign opaque randomized identifiers before review.
+
+The coordinator performs Chairman synthesis without another delegated worker.
+Full requires at least one valid candidate and one valid fresh independent
+review. A generator cannot be reused as its reviewer. If that minimum is lost,
+fall back while preserving actual launch accounting. Stop adding candidates
+when new branches repeat assumptions and report the smaller actual panel.
 
 Do not ask a worker to invoke Quorum, ADHD, or another orchestration skill. The parent Quorum run owns orchestration and termination.
 
@@ -105,20 +134,44 @@ Chairman {
 ## Review execution
 
 - Use Analyst, Skeptic, and Pragmatist as review lenses, not privileged identities.
-- Keep reviews independent when capacity permits.
+- Give each reviewer anonymized candidates without author/frame labels. Never
+  share peer reviews before the reviewer submits its own assessment.
 - Apply one stable rubric so rankings remain comparable.
-- If reciprocal peer review would exceed the budget, use one independent review per lens and record the reduced procedure.
-- The parent agent performs or delegates Chairman synthesis only after valid reviews arrive.
+- One reviewer covers all three lenses. With multiple reviewers, distribute
+  lenses with complete coverage, allowing overlap where appropriate. Lenses are
+  not worker counts. Disclose coverage lost to failures.
+- The parent coordinator performs Chairman synthesis after valid independent
+  review, without delegating another worker.
+
+## Routing between turns
+
+Respect explicit direct/mini/full; auto follows the protocol's ordered rules.
+Routine work and approved implementation use direct unless new material
+uncertainty requires reconsideration. Compatible conversation decisions can be
+reused, but changed goals, evidence, constraints, or material assumptions and
+explicit reconsideration invalidate reuse. Explicit full requests a fresh run.
+Return to direct after deciding. Length or complexity alone does not justify
+full. Controls are request-scoped; do not invent saved configuration or persist
+decision memory for this release.
 
 ## Provenance
 
-Use exactly one of these categories:
+Use the category supported by the actual execution:
 
+- `none`: direct execution without deliberation.
 - `internal-simulation`: one model context generated and reviewed all perspectives.
 - `isolated-same-model`: fresh isolated workers used the same model family or configuration.
 - `verified-distinct-models`: runtime evidence confirms distinct models produced the artifacts.
+- `isolated-models-unverified`: isolated workers ran, but model identity is not
+  verified. Do not silently label them same-model workers.
 
-Do not infer the third category from role names, worker counts, or different prompts.
+Do not infer distinct-model participation from role names, worker counts, or
+different prompts. On fallback, retain worker provenance separately from final
+synthesis provenance. Use `isolation-unverified` for attempts lacking isolation
+evidence; those attempts cannot satisfy the full-run independence minimum.
+Final full provenance describes accepted valid artifacts. Keep all-attempt
+worker provenance separately so failed attempts remain visible without
+misrepresenting successful replacement workers.
 
 ## Recovery and writes
 
@@ -133,8 +186,14 @@ Do not infer the third category from role names, worker counts, or different pro
 - Before a costly full run, state that Quorum is using isolated branches and give the expected scope when useful.
 - Do not narrate unchanged waits or internal rankings unless the user asks for the audit artifacts.
 - Return the Chairman synthesis as the final answer.
-- Include a concise provenance statement when deliberation ran.
-- If the run degrades, state the resulting tier and any material confidence impact.
+- When explicitly invoked or mini/full runs, give a concise receipt with
+  requested and actual tier, launched candidates/reviewers, total launches,
+  valid results when different, provenance, reductions, and degradation reasons.
+  Identify synthesis as coordinator work. Skip receipts for unrelated direct
+  answers. Explain unused counts in explicitly requested direct or mini runs.
+- If the run degrades, state the resulting tier and any material confidence
+  impact. Retain failed launches in receipts: a final internal-simulation mini
+  answer can still have spent workers during its failed full attempt.
 
 ## Authorization
 

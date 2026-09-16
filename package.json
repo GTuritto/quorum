@@ -1,7 +1,25 @@
 {
   "name": "quorum-skill",
-  "version": "0.1.59",
+  "version": "0.1.60",
   "description": "Adaptive multi-perspective reasoning skill for AI coding agents.",
+  "keywords": [
+    "ai",
+    "llm",
+    "ai-agents",
+    "coding-agents",
+    "agent-skills",
+    "reasoning",
+    "multi-agent",
+    "deliberation",
+    "code-review",
+    "decision-making",
+    "sudolang",
+    "codex",
+    "claude-code",
+    "cursor",
+    "github-copilot",
+    "antigravity"
+  ],
   "type": "module",
   "license": "MIT",
   "author": {

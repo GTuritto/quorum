@@ -7,6 +7,30 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+### Added
+
+- Automatic npm publication on stable version-tag pushes, with matching package
+  version and main-branch ancestry checks; manual publishing remains available.
+
+- 0.1.60 preparation: request-scoped auto/direct/mini/full controls,
+  candidate/reviewer targets, and total worker-launch caps.
+- Execution receipts distinguishing requested tiers, actual participation,
+  failed launches, provenance, and fallback behavior.
+- Development-only deterministic deliberation policy tests and host smoke
+  scenarios, with explicit limits on what automated checks prove.
+- npm discovery keywords for reasoning, agent skills, and supported assistants.
+
+### Changed
+
+- Prefer direct execution for routine work and implementation after a decision;
+  reuse compatible conversation decisions without persistent memory.
+- Default full deliberation to three candidates and one independent reviewer;
+  support smaller 1+1 panels and explicit larger panels within host/budget limits.
+- Keep mini within the current context, reserve capacity for independent review,
+  and perform synthesis in the coordinator.
+
+0.1.60 is prepared locally; this section does not claim npm or GitHub publication.
+
 ## [0.1.59] - 2026-09-07
 
 ### Added

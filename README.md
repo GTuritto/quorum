@@ -7,10 +7,15 @@
 | |_| || |_| || |_| ||  _ < | |_| || |  | |
  \__\_\ \___/  \___/ |_| \_\ \___/ |_|  |_|
 
-                    QUORUM v0.1.59
+                    QUORUM v0.1.60
 ```
 
 An adaptive multi-perspective reasoning skill for AI coding agents.
+
+This checkout prepares **0.1.60** locally. The published installation examples
+below remain pinned to **0.1.59** until a new release is published. To try this
+checkout, use `./install.sh --skills-dir /path/to/test-skills --yes` (or
+`install.ps1` on Windows), then load the resulting skill in your assistant.
 
 [![Release](https://img.shields.io/github/v/release/GTuritto/quorum)](https://github.com/GTuritto/quorum/releases/latest)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -271,6 +276,61 @@ Direct: Summarize the decision in three bullets.
 
 Quorum activates automatically only when multiple perspectives are likely to improve the result. Simple lookups and low-stakes transformations stay direct.
 
+### Control deliberation (0.1.60)
+
+Ask in natural language; these controls belong in your assistant request, not
+in the npm install command:
+
+```text
+Use Quorum at mini level to compare these two approaches.
+Use full Quorum with 3 candidates and 2 reviewers to assess this migration.
+Use auto Quorum with a maximum of 4 workers total.
+Use full Quorum with 1 candidate and 1 reviewer.
+```
+
+| Control | Behavior |
+| --- | --- |
+| `level: auto` | Direct for routine work, mini for bounded ambiguity, full for consequential uncertainty benefiting from independent investigation. |
+| `level: direct` | No optional deliberation and no delegated workers. |
+| `level: mini` | Analyst, Skeptic, and Pragmatist perspectives in one context; zero delegated workers. |
+| `level: full` | Isolated candidates, anonymized independent review, and synthesis by the coordinator. |
+| `candidates`, `reviewers` | Positive integer worker targets for full runs; defaults are 3 and 1. |
+| `maxWorkers` | Nonnegative integer cap on total launches, including failed workers and replacements; excludes the coordinator. |
+
+Explicit levels override automatic routing, and leading `Direct:` overrides
+all deliberation controls. Counts alone do not force a full run. Controls apply
+to the current run only; invalid values require clarification before dispatch.
+Direct and mini explain explicitly supplied counts that they do not use.
+
+Full defaults to four workers, but **four is not a minimum**: one candidate
+plus one fresh independent reviewer is valid, with less alternative generation.
+The reviewer can apply all three lenses. Explicit counts without a cap set the
+budget to their sum, with defaults filling missing counts. A cap limits rather
+than enlarges a requested panel. When constrained, reserve reviewer slots first
+while retaining at least one candidate, and report any count reductions.
+
+Total worker budget differs from concurrency: a host may run fresh workers in
+successive waves. If the budget cannot fund 1+1 or isolated workers are
+unavailable, full falls back to mini. Insufficient time or reasoning budget can
+force direct execution with disclosed uncertainty. User controls do not
+override host restrictions or authorize extra actions.
+
+Quorum reports what actually ran, for example:
+
+```text
+Quorum: requested full; full, 3 candidates + 1 reviewer, 4 workers;
+isolated-same-model; synthesis: coordinator
+```
+
+Receipts include reductions, failed launches, and fallback reasons when present.
+A failed full attempt followed by mini still reports the workers already spent.
+Role names never establish distinct-model participation.
+
+After reaching a decision, return to direct implementation. A compatible
+decision in the current conversation can be reused; changed evidence, goals,
+constraints, or assumptions require reassessment. An explicit full request
+starts a fresh run. This does not add persistent decision memory.
+
 ## How it works
 
 - [`SKILL.md`](SKILL.md) defines activation, routing, safety, and output behavior.
@@ -309,6 +369,11 @@ The suite covers target paths, conservative tool detection, CLI routing,
 selector state, split terminal escape sequences, mouse clicks, version policy,
 safe replacement, permanent uninstall, partial failure, packed execution,
 payload contents, and version agreement.
+
+It also checks a development-only deliberation reference policy and consistency
+of the shipped prompt contracts. Those deterministic tests do not prove that
+every assistant follows the protocol. See the source repository's
+`docs/testing/0.1.60-smoke.md` for host smoke scenarios and recorded limitations.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution steps and [SECURITY.md](SECURITY.md) for private vulnerability reporting.
 

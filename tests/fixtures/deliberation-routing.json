@@ -1,0 +1,21 @@
+[
+  {"name":"ordinary default", "input":{}, "tier":"direct"},
+  {"name":"explicit mini", "input":{"level":"mini"}, "tier":"mini"},
+  {"name":"explicit direct overrides consequential", "input":{"level":"direct","signals":{"consequential":true,"uncertain":true,"independentValue":true}}, "tier":"direct"},
+  {"name":"Direct bypass ignores all options", "input":{"directPrefix":true,"level":"garbage","candidates":0,"reviewers":"bad","maxWorkers":-1}, "tier":"direct"},
+  {"name":"routine precedes ambiguity", "input":{"signals":{"routine":true,"boundedAmbiguity":true}}, "tier":"direct"},
+  {"name":"approved implementation", "input":{"signals":{"approvedImplementation":true}}, "tier":"direct"},
+  {"name":"routine with new uncertainty", "input":{"signals":{"routine":true,"newMaterialUncertainty":true,"boundedAmbiguity":true}}, "tier":"mini"},
+  {"name":"compatible conversation decision", "input":{"decision":{"available":true,"compatible":true},"signals":{"boundedAmbiguity":true}}, "tier":"direct", "reusedDecision":true},
+  {"name":"new evidence invalidates reuse", "input":{"decision":{"available":true,"compatible":true,"newEvidence":true},"signals":{"boundedAmbiguity":true}}, "tier":"mini"},
+  {"name":"changed goal invalidates reuse", "input":{"decision":{"available":true,"compatible":true,"changedGoal":true},"signals":{"boundedAmbiguity":true}}, "tier":"mini"},
+  {"name":"changed constraint invalidates reuse", "input":{"decision":{"available":true,"compatible":true,"changedConstraint":true},"signals":{"boundedAmbiguity":true}}, "tier":"mini"},
+  {"name":"changed assumption invalidates reuse", "input":{"decision":{"available":true,"compatible":true,"changedAssumptions":true},"signals":{"boundedAmbiguity":true}}, "tier":"mini"},
+  {"name":"reconsider invalidates reuse", "input":{"decision":{"available":true,"compatible":true,"reconsider":true},"signals":{"boundedAmbiguity":true}}, "tier":"mini"},
+  {"name":"full explicitly requests fresh decision", "input":{"level":"full","decision":{"available":true,"compatible":true}}, "tier":"full"},
+  {"name":"consequential uncertain independent investigation", "input":{"signals":{"consequential":true,"uncertain":true,"independentValue":true}}, "tier":"full"},
+  {"name":"irreversible uncertain independent investigation", "input":{"signals":{"difficultToReverse":true,"uncertain":true,"independentValue":true}}, "tier":"full"},
+  {"name":"complexity alone", "input":{"signals":{"complex":true}}, "tier":"direct"},
+  {"name":"bounded ambiguity", "input":{"signals":{"boundedAmbiguity":true}}, "tier":"mini"},
+  {"name":"counts do not force full", "input":{"candidates":6,"reviewers":2}, "tier":"direct"}
+]

@@ -2,7 +2,7 @@
 name: quorum
 description: Use for difficult, ambiguous, consequential, or persistent decisions that benefit from adaptive multi-perspective analysis, isolated divergence, anonymous review, and concise synthesis. Skip ordinary factual or low-stakes requests, and honor a leading `Direct:` bypass.
 metadata:
-  version: "0.1.59"
+  version: "0.1.60"
 ---
 
 # Quorum
@@ -44,10 +44,57 @@ If the message begins with `Direct:`:
 Choose the cheapest tier that can produce a reliable answer:
 
 - **Direct:** Answer normally. Use for a leading `Direct:` prefix and requests that need no deliberation.
-- **Mini:** Generate compact Analyst, Skeptic, and Pragmatist perspectives, review their disagreements, and synthesize. Label this as internal simulation unless isolated workers were used.
-- **Full:** Generate three to five isolated candidates under distinct cognitive frames, anonymize them, review them through Analyst, Skeptic, and Pragmatist lenses, rank them, and synthesize with a Chairman pass.
+- **Mini:** Generate compact Analyst, Skeptic, and Pragmatist perspectives within this context, review disagreements, and synthesize. Use zero delegated workers and label `internal-simulation`.
+- **Full:** Generate the allocated isolated candidates under distinct cognitive frames, anonymize them, obtain independent review through all three lenses, and synthesize as coordinator. Default to three candidate workers and one fresh reviewer; allow a minimum of one candidate plus one reviewer. Disclose limited alternative generation with one candidate.
 
 Prefer reversible decisions when uncertainty remains high. Degrade `full` to `mini` to `direct` when worker capacity, latency, or budget is insufficient, and disclose the degradation when it affects confidence.
+
+## Request controls and routing
+
+Infer these controls from natural language for the current run only:
+
+- `level`: `auto` (default), `direct`, `mini`, or `full`.
+- `candidates` and `reviewers`: positive integer worker targets for full runs.
+- `maxWorkers`: nonnegative integer cap on total worker launches, including
+  failed workers and replacements. Exclude the coordinator; this is not a
+  concurrency limit or a token/currency budget.
+
+Examples: "Use mini Quorum", "Use full Quorum with 3 candidates and 2
+reviewers", or "Use auto Quorum with at most 4 workers total". These are
+instructions to the assistant, not installer flags.
+
+Leading `Direct:` overrides all controls and ignores unused invalid counts.
+Otherwise validate controls before dispatch; ask one focused clarification for
+invalid values. Explicit direct/mini/full overrides automatic routing. Counts
+alone do not force full. Direct and mini use zero delegated workers; explain
+unused explicitly supplied counts. Never carry controls into unrelated runs.
+
+In auto mode, routine coding, status checks, known-cause fixes, and implementing
+an approved decision stay direct unless new material uncertainty requires
+reconsideration. Reuse a conversation decision only while its task, constraints,
+and material assumptions remain compatible. New evidence, changed goals or
+constraints, and explicit reconsideration invalidate reuse. Explicit full
+requests a fresh run. No persistent decision memory is added.
+
+Select full only when meaningful uncertainty in a consequential or
+difficult-to-reverse decision benefits from independent investigation; use mini
+for bounded ambiguity needing challenge, otherwise direct. Complexity or long
+implementation alone does not justify full. Return to direct after deciding.
+
+Use default targets 3 candidates and 1 reviewer. Without explicit counts or a
+cap, maxWorkers is 4; with counts but no cap, use their sum after filling
+unspecified targets with defaults. An explicit cap does not increase targets.
+For cap >= 2 allocate reviewers = min(requestedReviewers, cap - 1), then
+candidates = min(requestedCandidates, cap - reviewers). Report reductions.
+There is no fixed upper panel size for explicit requests beyond the budget and
+host limits. A cap below 2 or unavailable isolation degrades full to mini.
+
+Reserve review capacity before candidate launches or replacements. Keep failed
+launches in the accounting; a replacement consumes another launch. Repair
+malformed output at most once in its worker. Use fresh isolated waves if
+concurrency is limited. Full requires at least one valid candidate and one
+valid fresh independent review; otherwise fall back and disclose uncertainty.
+Keep every review lens covered even when one reviewer applies all three.
 
 ## Isolation and cost
 
@@ -68,7 +115,21 @@ Return the Chairman's synthesis, not the hidden deliberation. Use the smallest h
 - Next action
 - Confidence, only when it helps the user interpret uncertainty
 
-Disclose provenance concisely when Quorum ran: internal simulation, isolated same-model workers, or verified distinct models.
+When Quorum is explicitly invoked or mini/full executes, include a concise
+receipt: requested and actual tier, launched candidates/reviewers, total
+launches, reductions or fallback reasons, and `internal-simulation`,
+`isolated-same-model`, or `verified-distinct-models` provenance. Include valid
+result counts if they differ from launches. The coordinator performs synthesis.
+Use provenance `none` for direct without deliberation. Use `isolated-models-unverified`
+when worker isolation is known but model identity is not, rather than assuming
+same-model participation. Attempts without verified isolation cannot satisfy
+full's minimum; retain their `isolation-unverified` evidence on fallback.
+For example: `Quorum: requested full; full, 3 candidates + 1 reviewer,
+4 workers; isolated-same-model; synthesis: coordinator`.
+
+If full fails and mini produces the answer, report spent launches as well as
+the final internal simulation. Never turn spent workers into a zero-worker
+receipt. Do not attach receipts to ordinary unrelated direct answers.
 
 ## Completion
 

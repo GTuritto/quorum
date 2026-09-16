@@ -11,6 +11,14 @@ test("trusted publish workflow uses constrained GitHub OIDC", async () => {
   const workflow = await readFile(workflowPath, "utf8");
 
   assert.match(workflow, /workflow_dispatch:/);
+  assert.match(workflow, /push:\n\s+tags:\n\s+- "v\*"/);
+  assert.match(workflow, /github\.event_name == 'push' && startsWith\(github\.ref, 'refs\/tags\/v'\)/);
+  assert.match(workflow, /fetch-depth: 0/);
+  assert.match(workflow, /git fetch --no-tags origin \+refs\/heads\/main:refs\/remotes\/origin\/main/);
+  assert.match(workflow, /node scripts\/verify-release\.mjs/);
+  assert.match(workflow, /id: release/);
+  assert.match(workflow, /RELEASE_VERSION: \$\{\{ steps\.release\.outputs\.version \}\}/);
+  assert.doesNotMatch(workflow, /quorum-skill-\$\{\{ inputs\.version/);
   assert.match(workflow, /version:\n\s+description:/);
   assert.match(workflow, /contents: read/);
   assert.match(workflow, /id-token: write/);
@@ -28,5 +36,6 @@ test("trusted publish workflow uses constrained GitHub OIDC", async () => {
     workflow.indexOf("actions/upload-artifact@v6") < workflow.indexOf("npm publish"),
     "verified artifacts must be preserved before the immutable npm publish",
   );
+  assert.ok(workflow.indexOf("node scripts/verify-release.mjs") < workflow.indexOf("npm test"));
   assert.doesNotMatch(workflow, /NODE_AUTH_TOKEN|NPM_TOKEN|secrets\./);
 });

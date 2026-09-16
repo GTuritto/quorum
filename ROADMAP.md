@@ -58,7 +58,11 @@ The approved design is documented at:
 - Consider explicit backup listing, restoration, and cleanup commands. Never
   remove update backups implicitly.
 
-## Possible follow-up release: 0.1.60
+## In preparation: 0.1.60
+
+The design is approved in
+[`docs/superpowers/specs/2026-09-16-cost-aware-deliberation-design.md`](docs/superpowers/specs/2026-09-16-cost-aware-deliberation-design.md).
+This is a local preparation milestone, not a publication claim.
 
 ### Cost-aware deliberation
 
@@ -81,6 +85,8 @@ The approved design is documented at:
   reasoning.
 - Add optional limits for candidate count, reviewer count, or an equivalent
   deliberation budget.
+- Accept explicit auto/direct/mini/full requests and worker targets. Default
+  full to 3 candidates + 1 reviewer; allow 1+1 with coordinator synthesis.
 - Degrade safely from full to mini or direct when the configured budget is
   insufficient, and disclose the degradation when it affects confidence.
 - Add deterministic routing and regression tests covering direct, mini, full,
@@ -105,7 +111,74 @@ The approved design is documented at:
 - Add tests for scope precedence, opt-out behavior, stale-record rejection,
   deletion, and the prohibition on persisting hidden reasoning.
 
+## Proposed follow-up release: 0.2.1
+
+Continue with incremental releases in the 0.2.x series. Move to 0.3.0 or 1.0.0
+only after an explicit release-planning decision.
+
+### Interactive questioning mode
+
+- Add an optional questioning mode inspired by `grill-me`, where participating
+  agents propose questions about missing information that could materially
+  change their evaluations.
+- Have the coordinator combine overlapping questions, prioritize consequential
+  unknowns, and ask the user one question at a time.
+- Share the questions and user answers with every participating agent while
+  keeping preliminary evaluations independent until the review stage.
+- Let each agent determine which answers affect its evaluation and revise its
+  assessment accordingly. Require all agents to respect the user's stated
+  requirements and constraints; challenge factual assumptions with evidence
+  when appropriate.
+- Synthesize the revised evaluations through independent review and Chairman
+  synthesis, preserving disagreements and unresolved assumptions.
+- Support questioning controls for off, automatic, and explicitly requested
+  modes. In automatic mode, ask only when missing user information could change
+  the outcome; proceed without an interview for sufficiently specified tasks.
+- Bound questions or rounds, allow the user to skip a question or finish the
+  interview, and disclose material uncertainty when evaluating with incomplete
+  information.
+- Keep shared answers within the configured memory scope and honor memory
+  opt-out and deletion controls.
+- Add tests for question deduplication, prioritization, shared-answer delivery,
+  independent evaluation, constraint adherence, question budgets, skipped
+  answers, and early completion.
+
+## Future iteration: Dynamic specialist routing
+
+### Adaptive specialist panels
+
+- Separate process roles, such as generation, adversarial review, and Chairman
+  synthesis, from domain perspectives.
+- Select the number and type of perspectives from task signals instead of using
+  one fixed panel for every full run.
+- Start with software-engineering perspectives such as Architect, Staff
+  Engineer, Security, DevOps/SRE, and QA, while leaving room for additional
+  specialist catalogues.
+- Add a specialist only when it contributes concerns, evidence, or failure
+  modes that the selected panel does not already cover.
+- Require relevant perspectives for material risk signals, such as Security for
+  authorization, secrets, or supply-chain changes and DevOps/SRE for deployment
+  and operational changes.
+- Keep specialist analyses isolated, anonymize their outputs, and subject them
+  to independent adversarial review before synthesis.
+- Allow users to add, exclude, or explicitly select perspectives when the
+  router's inferred panel does not fit the task.
+
+### Routing controls and verification
+
+- Bound specialist and reviewer counts through the existing deliberation-budget
+  controls and stop expanding the panel when new perspectives repeat existing
+  assumptions.
+- Use different models or reasoning levels only when the host supports and
+  verifies them; preserve accurate provenance when it does not.
+- Extend execution receipts to report the selected tier and actual specialist
+  and reviewer counts without exposing hidden reasoning.
+- Degrade safely when worker capacity or budget cannot support the selected
+  panel, and disclose any material effect on confidence.
+- Add deterministic routing tests for specialist selection, mandatory risk
+  perspectives, user overrides, overlap suppression, budget limits, and
+  fallback behavior.
+
 Because npm package versions are immutable, future work will not modify the
-published `0.1.58` or `0.1.59` packages. The `0.1.60` release remains optional:
-its work may move into `0.2.0` if a separate interim release would not provide
-enough user value.
+published `0.1.58` or `0.1.59` packages. The approved `0.1.60` work is being
+prepared as a separate release. Publication remains a separate decision.

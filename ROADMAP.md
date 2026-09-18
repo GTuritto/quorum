@@ -100,7 +100,7 @@ with signed provenance.
 Documentation-only refresh of the npm README, version badge, and current
 installation examples. Installer and deliberation behavior are unchanged.
 
-## Locally implemented: 0.1.65 (unreleased)
+## Released: 0.1.65
 
 ### Creative exploration
 
@@ -108,8 +108,10 @@ Help users explore an idea or problem through both grounded approaches and
 unconventional possibilities, including reframing the problem itself. The
 design is approved in
 [`docs/superpowers/specs/2026-09-17-creative-exploration-design.md`](docs/superpowers/specs/2026-09-17-creative-exploration-design.md).
-Implementation and local verification are complete; this version has not been
-published. See [verification evidence](docs/testing/0.1.65-smoke.md).
+Published on 2026-09-18 (UTC) through npm trusted publishing with signed
+provenance. The [GitHub release](https://github.com/GTuritto/quorum/releases/tag/v0.1.65)
+includes the workflow archives and checksums. See
+[verification evidence](docs/testing/0.1.65-smoke.md).
 
 - Support an optional creative exploration mode for software, product,
   strategy, and other open-ended problems. Infer useful perspectives from the

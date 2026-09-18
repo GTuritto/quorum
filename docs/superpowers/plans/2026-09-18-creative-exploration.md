@@ -60,3 +60,6 @@ Files: README.md, VERSION, package.json, SKILL.md metadata, CHANGELOG.md, ROADMA
 135 Node tests, installer integration, distribution build, payload/hash checks,
 and seven behavioral smoke cases passed. Independent review has no open findings.
 See ../../testing/0.1.65-smoke.md. No commit, push, tag, or publication performed.
+
+Publication was subsequently authorized and completed on 2026-09-18. See the
+release verification section in ../../testing/0.1.65-smoke.md.

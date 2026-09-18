@@ -16,12 +16,14 @@ function integer(value, minimum, name) {
 }
 
 /**
- * Input: level, directPrefix (already recognized leading Direct:), candidates,
- * reviewers, maxWorkers, invoked; capabilities {isolatedWorkers, concurrency};
+ * Input: level, exploration, directPrefix (already recognized leading Direct:),
+ * candidates, reviewers, maxWorkers, invoked; capabilities
+ * {isolatedWorkers, concurrency};
  * signals {routine, approvedImplementation, newMaterialUncertainty,
  * consequential, difficultToReverse, uncertain, independentValue,
- * boundedAmbiguity}; decision {available, compatible, newEvidence, changedGoal,
- * changedConstraint, changedAssumptions, reconsider} from this conversation.
+ * boundedAmbiguity, exploratoryIntent, newAlternatives}; decision {available,
+ * compatible, newEvidence, changedGoal, changedConstraint, changedAssumptions,
+ * reconsider} from this conversation.
  */
 export function planDeliberation(input = {}) {
   const reasons = [];
@@ -29,6 +31,10 @@ export function planDeliberation(input = {}) {
   const requestedTier = bypass ? 'direct' : (input.level ?? 'auto');
   if (!['auto', 'direct', 'mini', 'full'].includes(requestedTier)) {
     throw new TypeError('level must be auto, direct, mini, or full');
+  }
+  const requestedExploration = bypass ? 'auto' : (input.exploration === undefined ? 'auto' : input.exploration);
+  if (!['auto', 'on', 'off'].includes(requestedExploration)) {
+    throw new TypeError('exploration must be auto, on, or off');
   }
   const explicitCounts = input.candidates !== undefined || input.reviewers !== undefined;
   const targets = bypass ? { ...defaults } : {
@@ -43,20 +49,26 @@ export function planDeliberation(input = {}) {
   let reusedDecision = false;
   const signals = input.signals ?? {};
   const decision = input.decision ?? {};
+  const creativeRequest = requestedExploration === 'on' || signals.exploratoryIntent === true || signals.newAlternatives === true;
+  const explorationRequested = requestedExploration === 'on' ||
+    (requestedExploration === 'auto' && (signals.exploratoryIntent === true || signals.newAlternatives === true));
   const materialChange = signals.newMaterialUncertainty ||
     ['newEvidence', 'changedGoal', 'changedConstraint', 'changedAssumptions', 'reconsider'].some(key => decision[key]);
   if (bypass) reasons.push('Leading Direct: bypasses all deliberation controls.');
   if (tier === 'auto') {
-    if ((signals.routine || signals.approvedImplementation) && !materialChange) {
+    if ((signals.routine || signals.approvedImplementation) && !materialChange && !creativeRequest) {
       tier = 'direct';
       reasons.push('Routine execution or implementation of an approved decision.');
-    } else if (decision.available && decision.compatible && !materialChange) {
+    } else if (decision.available && decision.compatible && !materialChange && !creativeRequest) {
       tier = 'direct';
       reusedDecision = true;
       reasons.push('Reuse the compatible decision from this conversation.');
     } else if ((signals.consequential || signals.difficultToReverse) && signals.uncertain && signals.independentValue) {
       tier = 'full';
       reasons.push('Consequential uncertain decision benefits from independent investigation.');
+    } else if (explorationRequested) {
+      tier = 'mini';
+      reasons.push('Exploration intent benefits from structured generation and review.');
     } else if (signals.boundedAmbiguity) {
       tier = 'mini';
       reasons.push('Bounded ambiguity benefits from structured challenge.');
@@ -85,9 +97,14 @@ export function planDeliberation(input = {}) {
   } else if (explicitCounts && !bypass) {
     reasons.push('Explicit worker counts are unused in direct or mini.');
   }
+  const explorationActive = explorationRequested && tier !== 'direct';
+  if (!bypass && requestedTier === 'direct' && explorationRequested) {
+    reasons.push('Explicit direct level bypasses structured exploration.');
+  }
   return {
-    requestedTier, tier, targets, allocated, maxWorkers, reusedDecision, reasons,
-    invoked: input.invoked === true || bypass || input.level !== undefined || explicitCounts || input.maxWorkers !== undefined,
+    requestedTier, requestedExploration, tier, explorationActive, targets, allocated, maxWorkers, reusedDecision, reasons,
+    invoked: input.invoked === true || bypass || input.level !== undefined || input.exploration !== undefined ||
+      explicitCounts || input.maxWorkers !== undefined,
   };
 }
 
@@ -166,6 +183,10 @@ export function executionReceipt(plan, launches, options = {}) {
     tier = 'direct';
     reasons.push('Insufficient time or reasoning for mini; direct fallback preserves uncertainty.');
   }
+  const explorationApplied = plan.explorationActive === true && tier !== 'direct';
+  if (plan.explorationActive === true && !explorationApplied) {
+    reasons.push('Requested exploration was not applied after direct fallback.');
+  }
   if (valid.candidates !== launched.candidates || valid.reviewers !== launched.reviewers) {
     reasons.push('Failed or invalid worker results remain included in total launches.');
   }
@@ -181,7 +202,8 @@ export function executionReceipt(plan, launches, options = {}) {
   // Final synthesis evidence and all attempted participation are distinct.
   const workerProvenance = provenanceFor(launches);
   return {
-    requestedTier: plan.requestedTier, tier, targets: { ...plan.targets }, allocated: { ...plan.allocated },
+    requestedTier: plan.requestedTier, requestedExploration: plan.requestedExploration,
+    tier, explorationApplied, targets: { ...plan.targets }, allocated: { ...plan.allocated },
     maxWorkers: plan.maxWorkers, launched, valid, totalLaunches: launches.length,
     provenance: tier === 'mini' ? 'internal-simulation' : tier === 'direct' ? 'none' : provenanceFor(accepted),
     workerProvenance, synthesis: 'coordinator', reusedDecision: plan.reusedDecision,

@@ -100,6 +100,39 @@ with signed provenance.
 Documentation-only refresh of the npm README, version badge, and current
 installation examples. Installer and deliberation behavior are unchanged.
 
+## Locally implemented: 0.1.65 (unreleased)
+
+### Creative exploration
+
+Help users explore an idea or problem through both grounded approaches and
+unconventional possibilities, including reframing the problem itself. The
+design is approved in
+[`docs/superpowers/specs/2026-09-17-creative-exploration-design.md`](docs/superpowers/specs/2026-09-17-creative-exploration-design.md).
+Implementation and local verification are complete; this version has not been
+published. See [verification evidence](docs/testing/0.1.65-smoke.md).
+
+- Support an optional creative exploration mode for software, product,
+  strategy, and other open-ended problems. Infer useful perspectives from the
+  initial question and let the user explicitly request broader exploration.
+- Generate practical baseline options alongside out-of-the-box alternatives:
+  challenge assumptions, borrow approaches from other domains, and combine
+  ideas that would not normally be considered together.
+- Separate idea generation from critical evaluation so early criticism does
+  not eliminate promising unusual ideas before they can be developed.
+- Distinguish evidence-backed claims from analogies, assumptions, and
+  speculative hypotheses. Creativity must not turn invented facts into
+  supporting evidence.
+- Respect the user's hard constraints while identifying assumptions that could
+  be relaxed with their agreement. Explain when an idea depends on such a change.
+- Evaluate options for usefulness, originality, feasibility, cost, and risk.
+  Preserve promising minority ideas rather than forcing premature consensus.
+- Present a grounded recommendation and worthwhile exploratory alternatives,
+  with the smallest experiment or prototype that could test each uncertain idea.
+- Keep exploration within the existing deliberation tier and worker budgets;
+  requesting creativity alone must not force additional agents or a full run.
+- Define evaluation examples for diverse ideas, honest uncertainty, constraint
+  adherence, actionable experiments, and budget compliance before implementation.
+
 ## Planned milestone: 0.2.0
 
 ### Configurable decision memory

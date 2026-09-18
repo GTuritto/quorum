@@ -12,10 +12,15 @@ test("version and public package declarations agree", async () => {
   const skill = await readFile(path.join(root, "SKILL.md"), "utf8");
   const skillVersion = skill.match(/^\s{2}version:\s*["']?([^"'\n]+)["']?\s*$/m)?.[1];
 
-  assert.equal(version, "0.1.61");
+  assert.equal(version, "0.1.65");
   assert.equal(packageJson.name, "quorum-skill");
   assert.equal(packageJson.version, version);
   assert.equal(skillVersion, version);
+  const readme = await readFile(path.join(root, "README.md"), "utf8");
+  assert.ok(readme.includes(`QUORUM v${version}`));
+  const currentExamples = [...readme.matchAll(/(?:quorum-skill@|quorum-skill-)(\d+\.\d+\.\d+)/g)];
+  assert.ok(currentExamples.length > 0);
+  for (const [, exampleVersion] of currentExamples) assert.equal(exampleVersion, version);
   assert.equal(packageJson.private, undefined);
   assert.deepEqual(packageJson.bin, {
     "quorum-skill": "installer/install.mjs",

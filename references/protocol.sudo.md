@@ -44,6 +44,8 @@ Quorum {
     runtimeCapabilities?
     budget?
     level = auto // auto | direct | mini | full; request-scoped
+    exploration = auto // auto | on | off; request-scoped
+    semanticSignals? { exploratoryIntent = false, newAlternatives = false }
     candidates? // positive integer target, full only
     reviewers? // positive integer target, full only
     maxWorkers? // nonnegative integer; total launches, not concurrency
@@ -52,15 +54,36 @@ Quorum {
 
   Candidate {
     id
-    proposal
+    proposal?
     evidence = []
     assumptions = []
     uncertainties = []
+    options? = [] // active exploration: one worker may generate several ideas
     provenance
   }
 
+  Option {
+    id // opaque randomized identifier assigned before review
+    kind = baseline | exploratory
+    proposal
+    mechanism
+    expectedBenefit
+    evidenceOrAnalogy = []
+    materialAssumptions = []
+    constraints = []
+    uncertainties = []
+    validationExperiment? {
+      assumptionTested
+      supportingObservation
+      rejectingObservation
+      expectedEffort?
+    }
+  }
+
   Review {
-    candidateId
+    candidateId? // inactive exploration
+    optionId? // active exploration; private mapping retains source candidate
+    requireExactlyOne(candidateId, optionId)
     supportedClaims = []
     unsupportedClaims = []
     failureConditions = []
@@ -97,6 +120,8 @@ Quorum {
     validCandidates
     validReviewers
     maxWorkers
+    requestedExploration
+    explorationApplied // derived from the final tier
     synthesis = coordinator
     isolationMethod
     modelProvenance = none | internal-simulation | isolated-same-model | verified-distinct-models | isolated-models-unverified
@@ -133,6 +158,13 @@ Quorum {
     Never claim distinct-model agreement without verified distinct-model provenance.
     Direct bypasses deliberation, not safety, authorization, or uncertainty disclosure.
 
+    When exploration is active, generate options before evaluating them and never change worker allocation.
+    Active exploration seeks at least one practical baseline and two materially different exploratory alternatives when useful and feasible.
+    Its option count is an idea count, not a worker count; do not pad weak variations.
+    Active options record mechanisms, expected benefits, evidence or analogies, material assumptions, constraints, and validation experiments.
+    Always label speculation and unknown feasibility; never fabricate evidence, research, novelty, or feasibility.
+    An active option that relaxes a hard constraint is conditional and cannot win as a feasible current option without user agreement.
+
     Generator branches are isolated and cannot see one another's outputs.
     Candidate identity and cognitive frame are hidden from reviewers.
     Reviewers judge claims and artifacts, not author identity.
@@ -153,15 +185,25 @@ Quorum {
     else useEstablishedDefaultOrOmit(input)
   }
 
-  route(request) {
+  resolveExploration(input, signals) {
+    if (input.exploration == on) return active
+    if (input.exploration == off) return inactive
+    return signals.exploratoryIntent || signals.newAlternatives ? active : inactive
+  }
+
+  route(request, signals, explorationActive) {
     if (beginsWith(request, "Direct:")) return direct
     if (level in [direct, mini, full]) return level
 
-    signals = assessTaskEvidenceConstraintsAndMaterialUncertainty(request)
+    creativeRequest = input.exploration == on || signals.exploratoryIntent || signals.newAlternatives
     if (routineCodingOrLookupOrStatusOrKnownCauseFixOrApprovedImplementation(signals)
         && !newMaterialUncertainty(signals)
+        && !creativeRequest
         && !newEvidenceOrChangedGoalOrChangedConstraintsOrReconsideration(request)) return direct
     if (compatibleConversationDecision(conversationDecision, request)
+        && input.exploration != on
+        && !signals.exploratoryIntent
+        && !signals.newAlternatives
         && !newEvidenceOrChangedGoalOrChangedConstraintsOrReconsideration(request)
         && !newMaterialUncertainty(signals)) {
       reuseDecisionWithoutNewCouncil
@@ -170,6 +212,7 @@ Quorum {
     if ((consequential(signals) || difficultToReverse(signals))
         && meaningfulUncertainty(signals)
         && independentInvestigationAddsValue(signals)) return full
+    if (explorationActive) return mini
     if (boundedAmbiguityBenefitsFromChallenge(signals)) return mini
     return direct
   }
@@ -204,14 +247,15 @@ Quorum {
   }
 
   runMini(input) {
-    candidates = simulateIndependently(
-      input.request,
-      lenses = [Analyst, Skeptic, Pragmatist]
-    )
+    candidates = input.explorationActive
+      ? generateOptionBundlesBeforeEvaluate(input.request,
+          practicalBaselinePlusTwoMateriallyDifferentExploratoryAlternativesWhenUseful)
+      : simulateIndependently(input.request, lenses = [Analyst, Skeptic, Pragmatist])
 
     candidates
-    |> anonymize
-    |> reviewAgreementAndDisagreement
+    |> if(input.explorationActive, assignOpaqueRandomizedOptionIdsAndSafelyAnonymizeAuthorAndFrameMetadata,
+        anonymizeCandidates)
+    |> reviewAgreementAndDisagreement(lenses = [Analyst, Skeptic, Pragmatist])
     |> chairmanSynthesize
     |> attachProvenance(internal-simulation)
   }
@@ -225,14 +269,19 @@ Quorum {
       require remainingLaunches(plan, ledger) > reservedReviewLaunches(plan, ledger)
       worker = dispatchAndRecordBeforeAwait(ledger, role = candidate)
       result = WorkerPool.generateIsolated(
-        generatorPrompt(input.request, frame),
+        generatorPrompt(input.request, frame,
+          optionBundleWhen(input.explorationActive,
+            practicalBaselinePlusTwoMateriallyDifferentExploratoryAlternativesWhenUseful)),
         minimumNecessaryContext(input.context), boundedBudget(frame))
       repairMalformedAtMostOnceInSameWorker(result)
       recordValidArtifactOrFailure(worker, result)
       if (newBranchesRepeatAssumptions) stopAddingCandidatesAndRecordReduction
     }
 
-    candidates = validCandidates(ledger) |> normalize(Candidate) |> randomizeOpaqueIds
+    candidates = validCandidates(ledger) |> normalize(Candidate)
+      |> if(input.explorationActive,
+        flattenOptionBundlesThenAssignOpaqueIdsAndSafelyAnonymize,
+        randomizeOpaqueCandidateIds)
     if (empty(candidates)) return fallbackRetainingLedger(input, ledger)
     for each reviewerSlot in plan.reviewers {
       require remainingLaunches(plan, ledger) > 0
@@ -258,6 +307,9 @@ Quorum {
       evidence quality
       logical consistency
       practical usefulness
+      if (explorationActive) originality relative to baseline
+      if (explorationActive) feasibility
+      if (explorationActive) cost
       risk awareness
       treatment of uncertainty
       unsupported assumptions
@@ -278,11 +330,18 @@ Quorum {
     combine compatible supported insights
     resolve disagreements when evidence permits
     reject weak or unsupported claims
+    if (explorationActive) preserve promising labeled hypotheses as experiments without accepting them as facts
     retain unresolved uncertainty
     prefer practical and reversible action when options are otherwise comparable
+    keep hard constraints binding
+    mark constraint-relaxing options conditional pending user agreement
+    never rank a conditional option as a feasible current winner
+    never convert unknown feasibility into fabricated evidence
 
     emit Decision {
       recommendation
+      worthwhile exploratory alternatives?
+      smallest actionable validation experiment? // assumption plus observable pass/fail and expected effort
       concise reasoning
       material risks or uncertainty
       material council disagreement?
@@ -314,14 +373,18 @@ Quorum {
     if (bypass) {
       input = removePrefixAndIgnoreDeliberationControls(input)
       input.level = direct
+      input.exploration = auto
     } else {
-      validateLevelAndSafeIntegerControlsOrAskOneFocusedQuestion(input)
+      validateLevelExplorationAndSafeIntegerControlsOrAskOneFocusedQuestion(input)
     }
     resolved = resolveRequiredInputs(input)
     goal = attachGoal(resolved)
     effort = ReasoningPolicy?.chooseEffort(resolved) ?? inferEffort(resolved)
     requestedTier = input.level
-    selectedTier = route(resolved)
+    signals = assessTaskEvidenceConstraintsAndMaterialUncertainty(resolved.request)
+    resolved.explorationActive = resolveExploration(resolved, signals)
+    selectedTier = route(resolved, signals, resolved.explorationActive)
+    if (selectedTier == direct) resolved.explorationActive = false
     workerPlan = allocate(resolved, selectedTier)
     tier = workerPlan.tier
     resolved.workerPlan = workerPlan
@@ -338,7 +401,9 @@ Quorum {
 
     return result |> receiptWhenExplicitlyInvokedOrDeliberated(
       requestedTier, actualTier, requestedCounts, launchLedger,
-      validResultCounts, cap, provenance, reductions, degradationReasons)
+      validResultCounts, cap, provenance, reductions, degradationReasons,
+      requestedExploration = input.exploration,
+      explorationApplied = resolved.explorationActive && actualTier in [mini, full])
   }
 }
 ```
@@ -353,10 +418,12 @@ Quorum {
 
 ## Control and execution contract
 
-- Normalize natural-language controls to `level`, `candidates`, `reviewers`,
+- Normalize natural-language controls to `level`, `exploration`, `candidates`, `reviewers`,
   and `maxWorkers`. These are not installer options. Controls last only for the
-  current run. Leading `Direct:` ignores all unused controls, including invalid
-  counts; otherwise invalid levels or unsafe/noninteger/negative counts require
+  current run and reset afterward. `exploration` accepts `auto`, `on`, or `off`;
+  explicit on/off overrides inferred intent. Leading `Direct:` ignores all unused
+  controls, including invalid exploration or counts; otherwise invalid levels,
+  exploration values, or unsafe/noninteger/negative counts require
   one focused clarification before any launch. Candidate/reviewer targets must
   be positive. Counts alone do not select full.
 - Direct and mini use zero delegated workers. Mini is always internal-simulation;
@@ -364,6 +431,14 @@ Quorum {
   and one valid fresh independent review. One candidate lacks independent
   alternative generation and must be disclosed. There is no fixed upper limit
   on explicitly requested panel size beyond host restrictions and the budget.
+- Resolve `exploratoryIntent` and `newAlternatives` before auto routing. Auto
+  exploration activates for discovery, alternative generation, brainstorming,
+  or reframing, not difficulty alone. Active exploration selects at least mini
+  unless direct was explicitly selected; consequential uncertainty can still
+  select full. Explicit on, `newAlternatives`, and auto `exploratoryIntent`
+  invalidate conversation-decision reuse. Exploration does not increase or
+  change candidate/reviewer allocation. Option count is an idea count, not a
+  worker count.
 - `maxWorkers` caps total worker launches, including failures and replacements;
   the coordinator performs synthesis and is excluded. An explicit cap never
   increases the requested targets. Before every dispatch, reserve remaining
@@ -379,6 +454,17 @@ Quorum {
   A single reviewer applies Analyst, Skeptic, and Pragmatist lenses. Multiple
   reviewers collectively cover all three under the same rubric. If failures
   remove a lens, disclose that gap rather than claiming complete coverage.
+- When exploration is active, generate option bundles before review and seek at
+  least one practical baseline and two materially different exploratory
+  alternatives when useful and feasible. Each option states its mechanism,
+  expected benefit, evidence or analogy, material assumptions, constraints, and
+  a small validation experiment. Use opaque option IDs and remove unnecessary
+  author/frame clues before anonymous review. Review usefulness, originality
+  relative to the baseline, feasibility, cost, and risk. Constraint-relaxing
+  ideas remain conditional and cannot win as feasible current options; never
+  fabricate evidence to make an option viable. Synthesis includes the smallest
+  actionable test with observable pass/fail conditions and expected effort when
+  uncertainty should be tested. Proposing an experiment does not authorize it.
 - Fallback keeps the entire launch ledger. Full degrades to mini when isolation
   or valid independent review is unavailable, or the cap cannot fund 1+1. If
   remaining reasoning/time budget cannot support mini, use direct with disclosed
@@ -387,6 +473,9 @@ Quorum {
   total, valid results when different, provenance, and reductions/fallbacks.
   A final mini after failed full reports spent launches and internal-simulation
   for the final synthesis; never report zero workers after spending launches.
+- The receipt reports requested exploration and `explorationApplied` from the
+  final tier. Full-to-mini fallback retains active exploration; final direct
+  reports it as not applied and discloses incomplete exploration when material.
 - Explicit full requests reconsideration. In auto mode, new evidence, changed
   task/goal/constraints/material assumptions, or an explicit reconsideration
   invalidate conversation reuse. Return to direct implementation after deciding.

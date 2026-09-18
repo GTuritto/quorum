@@ -7,6 +7,24 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.1.65] - 2026-09-18
+
+### Added
+
+- Request-scoped creative exploration with automatic activation and explicit
+  on/off controls, respecting direct overrides and existing worker budgets.
+- Grounded baseline options alongside unconventional alternatives, followed by
+  review of usefulness, originality, feasibility, cost, and risk.
+- Explicit evidence, assumptions, conditional constraints, and small validation
+  experiments, with exploration state in execution receipts.
+- Reference-policy regressions and portable protocol checks for creative
+  routing, decision reuse, budget preservation, and fallback reporting.
+
+### Changed
+
+- Rework the README quick start and package description around structured
+  second opinions for coding assistants, retaining usage and installation details.
+
 ## [0.1.61] - 2026-09-16
 
 ### Fixed
@@ -95,7 +113,8 @@ Release dates use UTC; npm recorded publication at 22:57:40 UTC.
 - Automated unit and integration coverage for installer behavior and payload
   integrity.
 
-[Unreleased]: https://github.com/GTuritto/quorum/compare/v0.1.61...HEAD
+[Unreleased]: https://github.com/GTuritto/quorum/compare/v0.1.65...HEAD
+[0.1.65]: https://github.com/GTuritto/quorum/compare/v0.1.61...v0.1.65
 [0.1.61]: https://github.com/GTuritto/quorum/compare/v0.1.60...v0.1.61
 [0.1.60]: https://github.com/GTuritto/quorum/compare/v0.1.59...v0.1.60
 [0.1.59]: https://github.com/GTuritto/quorum/compare/v0.1.58...v0.1.59

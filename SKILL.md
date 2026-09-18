@@ -2,7 +2,7 @@
 name: quorum
 description: Use for difficult, ambiguous, consequential, or persistent decisions that benefit from adaptive multi-perspective analysis, isolated divergence, anonymous review, and concise synthesis. Skip ordinary factual or low-stakes requests, and honor a leading `Direct:` bypass.
 metadata:
-  version: "0.1.61"
+  version: "0.1.65"
 ---
 
 # Quorum
@@ -54,31 +54,45 @@ Prefer reversible decisions when uncertainty remains high. Degrade `full` to `mi
 Infer these controls from natural language for the current run only:
 
 - `level`: `auto` (default), `direct`, `mini`, or `full`.
+- `exploration`: `auto` (default), `on`, or `off`.
 - `candidates` and `reviewers`: positive integer worker targets for full runs.
 - `maxWorkers`: nonnegative integer cap on total worker launches, including
   failed workers and replacements. Exclude the coordinator; this is not a
   concurrency limit or a token/currency budget.
 
 Examples: "Use mini Quorum", "Use full Quorum with 3 candidates and 2
-reviewers", or "Use auto Quorum with at most 4 workers total". These are
-instructions to the assistant, not installer flags.
+reviewers", "Explore unconventional solutions", or "Use Quorum with creative
+exploration off". These are request-scoped instructions to the assistant, not
+installer flags or saved configuration. Reset them for the next unrelated run.
 
-Leading `Direct:` overrides all controls and ignores unused invalid counts.
-Otherwise validate controls before dispatch; ask one focused clarification for
-invalid values. Explicit direct/mini/full overrides automatic routing. Counts
-alone do not force full. Direct and mini use zero delegated workers; explain
+Leading `Direct:` overrides all controls and ignores unused invalid counts or
+exploration values. Otherwise validate `exploration` with the other controls
+before dispatch; explicit `on` or `off` overrides inferred activation. Ask one
+focused clarification for invalid values. Explicit direct/mini/full overrides
+automatic routing. Counts alone do not force full. Direct and mini use zero delegated workers; explain
 unused explicitly supplied counts. Never carry controls into unrelated runs.
+
+Resolve semantic signals `exploratoryIntent` and `newAlternatives` before auto
+routing. With `exploration: auto`, activate exploration only for requests to
+discover new possibilities, materially different alternatives, brainstorming,
+or reframing. Difficulty alone is not exploratory intent. Explicit `on` always
+activates and explicit `off` always disables the structured exploration workflow.
+Direct remains direct. Otherwise active exploration selects at least mini; the
+existing consequential, difficult-to-reverse uncertainty criteria can still
+select full, but exploration alone never forces full.
 
 In auto mode, routine coding, status checks, known-cause fixes, and implementing
 an approved decision stay direct unless new material uncertainty requires
-reconsideration. Reuse a conversation decision only while its task, constraints,
+reconsideration, exploration is explicitly on, or the request expresses
+exploratory intent or asks for new alternatives. Reuse a conversation decision only while its task, constraints,
 and material assumptions remain compatible. New evidence, changed goals or
-constraints, and explicit reconsideration invalidate reuse. Explicit full
-requests a fresh run. No persistent decision memory is added.
+constraints, explicit reconsideration, explicit `exploration: on`,
+`newAlternatives`, and inferred `exploratoryIntent` invalidate reuse. Explicit
+full requests a fresh run. No persistent decision memory is added.
 
 Select full only when meaningful uncertainty in a consequential or
 difficult-to-reverse decision benefits from independent investigation; use mini
-for bounded ambiguity needing challenge, otherwise direct. Complexity or long
+for active exploration or bounded ambiguity needing challenge, otherwise direct. Complexity or long
 implementation alone does not justify full. Return to direct after deciding.
 
 Use default targets 3 candidates and 1 reviewer. Without explicit counts or a
@@ -95,6 +109,40 @@ malformed output at most once in its worker. Use fresh isolated waves if
 concurrency is limited. Full requires at least one valid candidate and one
 valid fresh independent review; otherwise fall back and disclose uncertainty.
 Keep every review lens covered even when one reviewer applies all three.
+
+## Exploration workflow
+
+When exploration is active, frame hard constraints before generation. Ask for
+an option bundle containing at least one practical baseline and two materially
+different exploratory alternatives when useful and feasible. This is an idea
+count, not a worker count: exploration does not increase or change candidate or
+reviewer allocation, and one generator may return several options. Do not pad a
+bundle when fewer useful options survive.
+
+Each option records its mechanism, expected benefit, evidence or analogy,
+material assumptions, constraints, and a small validation experiment. Mark
+speculation and unknown feasibility. Never fabricate facts, research, novelty,
+or feasibility. A proposal that relaxes a hard constraint is conditional and
+cannot become the recommendation without the user's agreement. Generators
+describe dependencies but do not evaluate, rank, or choose options.
+
+With exploration active, Mini generates the bundle before applying Analyst,
+Skeptic, and Pragmatist review in the current context. Full keeps generators
+isolated, normalizes all valid options into one candidate set, replaces author
+and cognitive-frame labels with opaque randomized option IDs, and gives fresh
+reviewers only the safely anonymized option content. Strip metadata or wording
+that reveals authorship or frame when it is unnecessary to evaluate the
+proposal. With exploration off, preserve the existing candidate schemas and
+Mini's usual three-perspective generation and review flow.
+
+Review usefulness, originality relative to the baseline, feasibility, cost,
+and risk under the same hard constraints. Preserve a promising minority option
+and its disagreements. Synthesis returns a grounded recommendation, worthwhile
+exploratory alternatives, and the smallest actionable test for the most
+promising uncertainty. State the assumption tested, observable support and
+rejection conditions, and expected effort when estimable. If support is too
+weak, recommend the experiment rather than inventing a confident choice.
+Proposing an experiment does not authorize running it.
 
 ## Isolation and cost
 
@@ -126,6 +174,13 @@ same-model participation. Attempts without verified isolation cannot satisfy
 full's minimum; retain their `isolation-unverified` evidence on fallback.
 For example: `Quorum: requested full; full, 3 candidates + 1 reviewer,
 4 workers; isolated-same-model; synthesis: coordinator`.
+
+The receipt also reports requested exploration and `explorationApplied` from the
+final tier. It is true only when mini or full actually applied the exploration
+workflow. A full-to-mini fallback retains active exploration and reports it as
+applied; a final direct fallback reports it as not applied and discloses
+incomplete exploration when material. More options never imply more workers,
+models, or verified evidence.
 
 If full fails and mini produces the answer, report spent launches as well as
 the final internal simulation. Never turn spent workers into a zero-worker

@@ -1,5 +1,7 @@
 # Quorum
 
+![Quorum terminal logo in muted blue and teal](https://raw.githubusercontent.com/GTuritto/quorum/main/assets/quorum-logo.svg)
+
 **Give your AI coding agent a structured second opinion.**
 
 Quorum is a skill for challenging implementation plans, reviewing code, and
@@ -13,7 +15,7 @@ what your host supports.
 [![npm version](https://img.shields.io/npm/v/quorum-skill)](https://www.npmjs.com/package/quorum-skill)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Current release: **QUORUM v0.1.65**. The npm badge tracks the published package.
+Current release: **QUORUM v0.1.66**. The npm badge tracks the published package.
 Creative exploration is included in this release.
 
 ## Quick start
@@ -201,6 +203,10 @@ Mini runs can simulate several perspectives inside one model context. For full r
 
 The installer has no third-party package dependencies.
 
+The terminal banner uses one muted blue or teal color per letter on terminals
+with 256-color or true-color support. Set `NO_COLOR=1` to disable it. Redirected
+output, `TERM=dumb`, and limited-color terminals retain the plain ASCII logo.
+
 ## Install
 
 Run Quorum directly from npm:
@@ -212,14 +218,14 @@ npx quorum-skill
 Pin the exact release when reproducibility matters:
 
 ```sh
-npx quorum-skill@0.1.65
+npx quorum-skill@0.1.66
 ```
 
 `npx` may ask before downloading an uncached package. Put `-y` before the
 package name to suppress that npm prompt:
 
 ```sh
-npx -y quorum-skill@0.1.65 --all --dry-run
+npx -y quorum-skill@0.1.66 --all --dry-run
 ```
 
 This does not suppress Quorum's replacement confirmation. Pass Quorum's
@@ -230,13 +236,13 @@ This does not suppress Quorum's replacement confirmation. Pass Quorum's
 Download the tarball from npm into an empty working directory:
 
 ```sh
-npm pack quorum-skill@0.1.65
+npm pack quorum-skill@0.1.66
 ```
 
 On macOS or Linux:
 
 ```sh
-tar -xzf quorum-skill-0.1.65.tgz &&
+tar -xzf quorum-skill-0.1.66.tgz &&
 cd package &&
 ./install.sh
 ```
@@ -245,7 +251,7 @@ On Windows PowerShell with `tar` available, run each command after the previous
 one succeeds:
 
 ```powershell
-tar -xzf quorum-skill-0.1.65.tgz
+tar -xzf quorum-skill-0.1.66.tgz
 Set-Location .\package
 .\install.ps1
 ```
@@ -355,10 +361,10 @@ npx quorum-skill --update
 
 `--upgrade` is an exact alias. The installer performs no network request and
 does not choose a release. npm selects the package first, so this command
-applies version 0.1.65 explicitly:
+applies version 0.1.66 explicitly:
 
 ```sh
-npx quorum-skill@0.1.65 --update
+npx quorum-skill@0.1.66 --update
 ```
 
 An explicit update target stays absent when it is not installed:

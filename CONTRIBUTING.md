@@ -46,6 +46,13 @@ git diff --check
 dist` verifies the exact npm packlist before producing the compact release
 archives and `SHA256SUMS` in `dist/`.
 
+## Logo maintenance
+
+The terminal banner in `installer/selector.mjs` owns the ASCII lettering and
+blue/teal palette. After changing it, run `node scripts/build-logo.mjs` to
+regenerate `assets/quorum-logo.svg`. The banner tests check SVG consistency,
+plain-text fallback, selector row positions, and version-only output.
+
 ## Publishing a release
 
 Merge the versioned changes and publishing workflow into `main` first. Then

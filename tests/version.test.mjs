@@ -12,7 +12,7 @@ test("version and public package declarations agree", async () => {
   const skill = await readFile(path.join(root, "SKILL.md"), "utf8");
   const skillVersion = skill.match(/^\s{2}version:\s*["']?([^"'\n]+)["']?\s*$/m)?.[1];
 
-  assert.equal(version, "0.1.65");
+  assert.equal(version, "0.1.66");
   assert.equal(packageJson.name, "quorum-skill");
   assert.equal(packageJson.version, version);
   assert.equal(skillVersion, version);

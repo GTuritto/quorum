@@ -4,6 +4,7 @@ export const EXPECTED_PACKAGE_FILES = Object.freeze([
   "SKILL.md",
   "VERSION",
   "agents/openai.yaml",
+  "assets/quorum-logo.svg",
   "install.ps1",
   "install.sh",
   "installer/detection.mjs",

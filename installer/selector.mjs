@@ -8,8 +8,27 @@ const ENABLE_MOUSE = "\u001b[?1000h\u001b[?1006h";
 const DISABLE_MOUSE = "\u001b[?1000l\u001b[?1006l";
 const CLEAR_SCREEN = "\u001b[2J\u001b[H";
 
-export function bannerLines(version) {
-  return [
+// One solid color per letter, shared with the README SVG generator.
+export const BANNER_COLORS = Object.freeze([
+  { hex: "#5fafaf", ansi256: 73 },
+  { hex: "#5f87af", ansi256: 67 },
+  { hex: "#87afaf", ansi256: 109 },
+  { hex: "#5f9fd7", ansi256: 74 },
+  { hex: "#87d7d7", ansi256: 116 },
+  { hex: "#87afd7", ansi256: 110 },
+].map(Object.freeze));
+
+// The original FIGlet letter boundaries; preserve every space and glyph.
+export const BANNER_COLUMNS = Object.freeze([0, 7, 14, 21, 28, 35, 43]);
+
+export function bannerColorDepth(output, env = process.env) {
+  if (!output?.isTTY || env.NO_COLOR !== undefined || env.TERM === "dumb") return 0;
+  const depth = output.getColorDepth?.(env) ?? 0;
+  return depth >= 24 ? 24 : depth >= 8 ? 8 : 0;
+}
+
+export function bannerLines(version, { colorDepth = 0 } = {}) {
+  const lines = [
     "  ___   _   _   ___   ____   _   _  __  __",
     " / _ \\ | | | | / _ \\ |  _ \\ | | | ||  \\/  |",
     "| | | || | | || | | || |_) || | | || |\\/| |",
@@ -18,10 +37,17 @@ export function bannerLines(version) {
     "",
     `                    QUORUM v${version}`,
   ];
+  if (colorDepth < 8) return lines;
+  return lines.map((line, row) => row >= 5 ? line : BANNER_COLORS.map((color, index) => {
+    const fragment = line.slice(BANNER_COLUMNS[index], BANNER_COLUMNS[index + 1]);
+    const rgb = color.hex.slice(1).match(/../g).map(value => Number.parseInt(value, 16));
+    const code = colorDepth >= 24 ? `38;2;${rgb.join(";")}` : `38;5;${color.ansi256}`;
+    return `\u001b[${code}m${fragment}\u001b[0m`;
+  }).join(""));
 }
 
-export function formatBanner(version) {
-  return `${bannerLines(version).join("\n")}\n`;
+export function formatBanner(version, options) {
+  return `${bannerLines(version, options).join("\n")}\n`;
 }
 
 export function createSelectionState(initialTargetIds = []) {
@@ -66,8 +92,8 @@ export function toggleAt(state, index) {
   return { ...state, cursor: index, selected, message: "" };
 }
 
-export function renderSelector(state, version) {
-  const lines = [...bannerLines(version), "", "Select one or more targets:", ""];
+export function renderSelector(state, version, options) {
+  const lines = [...bannerLines(version, options), "", "Select one or more targets:", ""];
   const rows = new Map();
 
   const addOption = (index, label, checked) => {
@@ -159,6 +185,7 @@ export function runSelector({
   input = process.stdin,
   output = process.stdout,
   signals = process,
+  env = process.env,
   initialTargetIds = [],
 } = {}) {
   if (!input.isTTY || !output.isTTY || typeof input.setRawMode !== "function") {
@@ -174,7 +201,7 @@ export function runSelector({
     const previousRawMode = Boolean(input.isRaw);
 
     const render = () => {
-      const rendered = renderSelector(state, version);
+      const rendered = renderSelector(state, version, { colorDepth: bannerColorDepth(output, env) });
       rowMap = rendered.rows;
       output.write(`${CLEAR_SCREEN}${rendered.text}`);
     };

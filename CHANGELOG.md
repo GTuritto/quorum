@@ -7,6 +7,15 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.1.66] - 2026-09-18
+
+### Changed
+
+- Restore the terminal-style logo with a solid blue/teal color per letter in
+  the README and installer banners, including the interactive selector.
+- Preserve plain ASCII for redirected output, limited-color terminals,
+  `TERM=dumb`, and `NO_COLOR`; keep version-only output machine-readable.
+
 ## [0.1.65] - 2026-09-18
 
 ### Added
@@ -113,7 +122,8 @@ Release dates use UTC; npm recorded publication at 22:57:40 UTC.
 - Automated unit and integration coverage for installer behavior and payload
   integrity.
 
-[Unreleased]: https://github.com/GTuritto/quorum/compare/v0.1.65...HEAD
+[Unreleased]: https://github.com/GTuritto/quorum/compare/v0.1.66...HEAD
+[0.1.66]: https://github.com/GTuritto/quorum/compare/v0.1.65...v0.1.66
 [0.1.65]: https://github.com/GTuritto/quorum/compare/v0.1.61...v0.1.65
 [0.1.61]: https://github.com/GTuritto/quorum/compare/v0.1.60...v0.1.61
 [0.1.60]: https://github.com/GTuritto/quorum/compare/v0.1.59...v0.1.60

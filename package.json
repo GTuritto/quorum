@@ -1,6 +1,6 @@
 {
   "name": "quorum-skill",
-  "version": "0.1.65",
+  "version": "0.1.66",
   "description": "Structured second opinions for AI coding agents: challenge implementation plans, review code, and compare approaches in Codex and Claude Code.",
   "keywords": [
     "agent-skills",
@@ -39,6 +39,7 @@
     "SKILL.md",
     "VERSION",
     "agents/openai.yaml",
+    "assets/quorum-logo.svg",
     "install.ps1",
     "install.sh",
     "installer/detection.mjs",

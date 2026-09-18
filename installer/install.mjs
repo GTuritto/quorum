@@ -18,7 +18,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { formatBanner, runSelector } from "./selector.mjs";
+import { bannerColorDepth, formatBanner, runSelector } from "./selector.mjs";
 import { inspectQuorumPath } from "./identity.mjs";
 import {
   detectTools,
@@ -755,7 +755,7 @@ export async function main({
     const source = options.operation === "uninstall"
       ? { sourceRoot, version: await readSourceVersion(sourceRoot) }
       : await validateSource(sourceRoot);
-    output.write(`${formatBanner(source.version)}\n`);
+    output.write(`${formatBanner(source.version, { colorDepth: bannerColorDepth(output, env) })}\n`);
     if (options.help) {
       output.write(helpText());
       return 0;
@@ -772,7 +772,7 @@ export async function main({
       env,
       interactive: Boolean(input?.isTTY && output?.isTTY),
       sourceVersion: source.version,
-      selectTargets: (selectorOptions) => runSelector({ ...selectorOptions, input, output }),
+      selectTargets: (selectorOptions) => runSelector({ ...selectorOptions, input, output, env }),
       promptForSkillsDir: () => promptForSkillsDirectory({ input, output }),
     });
     if (plan.cancelled) {

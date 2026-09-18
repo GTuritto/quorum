@@ -135,6 +135,13 @@ includes the workflow archives and checksums. See
 - Define evaluation examples for diverse ideas, honest uncertainty, constraint
   adherence, actionable experiments, and budget compliance before implementation.
 
+## Released: 0.1.66
+
+Restore the terminal ASCII logo with one muted blue/teal color per letter in
+the README and shared installer banner. Preserve plain output for redirects,
+limited-color terminals, `TERM=dumb`, and `NO_COLOR`. Version-only output stays
+machine-readable. See [release verification](docs/testing/0.1.66-release.md).
+
 ## Planned milestone: 0.2.0
 
 ### Configurable decision memory

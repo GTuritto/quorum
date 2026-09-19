@@ -49,9 +49,9 @@ archives and `SHA256SUMS` in `dist/`.
 ## Logo maintenance
 
 The terminal banner in `installer/selector.mjs` owns the ASCII lettering and
-blue/teal palette. After changing it, run `node scripts/build-logo.mjs` to
-regenerate `assets/quorum-logo.svg`. The banner tests check SVG consistency,
-plain-text fallback, selector row positions, and version-only output.
+blue/teal palette. Keep the README code block aligned with its plain ASCII
+output. The banner tests check README consistency, plain-text fallback,
+selector row positions, and version-only output.
 
 ## Publishing a release
 

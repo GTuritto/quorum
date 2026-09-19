@@ -34,13 +34,13 @@ test('colored selector retains text and mouse row positions', () => {
   assert.deepEqual(colored.rows, plain.rows);
 });
 
-test('README SVG stays aligned with the terminal palette and original glyphs', async () => {
+test('README logo matches the plain terminal ASCII banner', async () => {
   const { readFile } = await import('node:fs/promises');
-  const { renderLogo } = await import('../scripts/build-logo.mjs');
-  const svg = await readFile(new URL('../assets/quorum-logo.svg', import.meta.url), 'utf8');
-  assert.equal(svg, renderLogo());
-  assert.match(svg, /<title id="title">Quorum<\/title>/);
-  assert.doesNotMatch(svg, /<script|<image|linearGradient/);
+  const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
+  const version = (await readFile(new URL('../VERSION', import.meta.url), 'utf8')).trim();
+  const logo = readme.split('```text\n')[1]?.split('```')[0];
+  assert.equal(logo, formatBanner(version));
+  assert.doesNotMatch(readme, /quorum-logo\.svg/);
 });
 
 test('installer uses terminal colors for help but keeps version output plain', async () => {

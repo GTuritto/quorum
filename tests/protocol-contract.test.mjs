@@ -2,47 +2,94 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-// These checks detect drift in shipped instructions, not host compliance.
-for (const file of ["SKILL.md", "references/protocol.sudo.md", "references/codex-adapter.md"]) {
-  test(`${file} exposes the portable controls and preserves core invariants`, async () => {
-    const text = await readFile(new URL(`../${file}`, import.meta.url), "utf8");
-    for (const control of ["level", "candidates", "reviewers", "maxWorkers", "Direct:"]) {
-      assert.ok(text.includes(control), `${file} must document ${control}`);
-    }
-    assert.match(text, /zero delegated workers/i);
-    assert.match(text, /total (worker )?launches/i);
-    assert.match(text, /coordinator/i);
-    assert.match(text, /independent review/i);
-    assert.match(text, /internal-simulation/);
-    assert.match(text, /verified-distinct-models/);
-    assert.match(text, /hidden (chain of thought|reasoning)/i);
-    for (const requirement of [
-      /three candidate|three candidates|defaultCandidateCount = 3/i,
-      /one (fresh |independent )?reviewer|defaultReviewerCount = 1/i,
-      /reserve[\s\S]{0,160}review/i,
-      /min\(requestedReviewers, cap - 1\)/,
-      /min\(requestedCandidates, cap - reviewers\)/,
-      /one valid candidate[\s\S]{0,35}one\s+valid fresh independent\s+review/i,
-      /fail(ed|ures)[\s\S]{0,80}(launch|replacement)/i,
-      /invalid[\s\S]{0,100}(clarification|clarify)|clarification[\s\S]{0,80}invalid/i,
-      /changed[\s\S]{0,180}constraints[\s\S]{0,180}invalidat/i,
-      /provenance[\s\S]{0,40}`none`|`none`:[\s\S]{0,40}direct/i,
-    ]) assert.match(text, requirement, `${file}: missing contract ${requirement}`);
-    assert.doesNotMatch(text, /three to five isolated candidates|frames = selectDistinctCognitiveFrames\(3\.\./);
-  });
-}
+const read = (file) => readFile(new URL(`../${file}`, import.meta.url), "utf8");
 
-test("Direct bypass retains shared required-input and goal lifecycle", async () => {
-  const protocol = await readFile(new URL("../references/protocol.sudo.md", import.meta.url), "utf8");
-  const run = protocol.slice(protocol.indexOf("  run(input) {"), protocol.indexOf("## Interpretation notes"));
+// Structural drift checks, not evidence of an LLM obeying the protocol.
+test("entry loads the canonical protocol before execution and the adapter only for Codex", async () => {
+  const entry = await read("SKILL.md");
+  assert.match(entry, /```sudo/);
+  assert.match(entry, /requireRead\("references\/protocol\.sudo\.md"\)/);
+  assert.match(entry, /host == Codex[\s\S]*requireRead\("references\/codex-adapter\.md"\)/);
+  assert.match(entry, /missing[\s\S]*stop/i);
+  assert.match(entry, /Quorum\.run\(request\)/);
+  const portableRead = entry.indexOf('requireRead("references/protocol.sudo.md")');
+  const adapterRead = entry.indexOf('requireRead("references/codex-adapter.md")');
+  const execute = entry.indexOf("execute Quorum.run(request)");
+  assert.ok(portableRead >= 0 && adapterRead > portableRead && execute > adapterRead);
+  assert.match(entry, /if \(host == Codex\) requireRead\("references\/codex-adapter\.md"\)/);
+});
+
+test("adapter binds capabilities without duplicating the portable routing policy", async () => {
+  const adapter = await read("references/codex-adapter.md");
+  assert.match(adapter, /```sudo/);
+  assert.match(adapter, /requireRead\("protocol\.sudo\.md"\)/);
+  for (const binding of ["GoalStore", "ReasoningPolicy", "WorkerPool", "ArtifactStore"]) {
+    assert.ok(adapter.includes(binding), binding);
+  }
+  assert.doesNotMatch(adapter, /route\(request|defaultCandidateCount\s*=/);
+  assert.match(adapter, /explicit[\s\S]*token budget/i);
+  assert.match(adapter, /runtime[\s\S]*blocked/i);
+});
+
+test("canonical contract retains controls, allocation, review, and provenance", async () => {
+  const protocol = await read("references/protocol.sudo.md");
+  for (const field of ["level", "candidates", "reviewers", "maxWorkers", "Direct:",
+    "requestedTier", "totalLaunches", "validCandidates", "validReviewers", "workerProvenance",
+    "internal-simulation", "verified-distinct-models", "isolated-models-unverified", "isolation-unverified"]) {
+    assert.ok(protocol.includes(field), field);
+  }
+  for (const rule of [
+    /defaultCandidateCount = 3/, /defaultReviewerCount = 1/,
+    /min\(requestedReviewers, cap - 1\)/, /min\(requestedCandidates, cap - reviewers\)/,
+    /safe integers/, /positive/, /nonnegative/,
+    /counts alone[^\n]*full/i, /zero delegated workers/i,
+    /reserve[^\n]*review/i, /failures[^\n]*replacements/,
+    /one valid candidate[^\n]*one valid fresh independent review/i,
+    /fresh[^\n]*reviewer/i, /no peer reviews/i,
+    /one repair[^\n]*same worker/i, /no candidates after review/i,
+    /never[^\n]*(expose|persist)[^\n]*hidden/i,
+    /untrusted[^\n]*authority/i, /none[^\n]*direct/i,
+    /no automatic decision memory/i, /maxWorkers=plan\.cap even for direct\|mini/,
+  ]) assert.match(protocol, rule);
+});
+
+test("Direct still resolves inputs and goals before execution; exploration resolves before routing", async () => {
+  const protocol = await read("references/protocol.sudo.md");
+  const run = protocol.slice(protocol.indexOf("  run(input) {"));
+  assert.match(run, /removePrefixAndIgnoreDeliberationControls/);
   const resolution = run.indexOf("resolved = resolveRequiredInputs(input)");
   assert.ok(resolution > 0);
   assert.doesNotMatch(run.slice(0, resolution), /return /);
   assert.match(run, /goal = attachGoal\(resolved\)/);
   assert.match(run, /GoalStore.update\(capsule\)/);
+  const exploration = run.indexOf("resolveExploration");
+  const routing = run.indexOf("route(");
+  assert.ok(exploration >= 0 && routing >= 0 && exploration < routing);
+  assert.match(run, /authorizedPersistence/);
 });
 
 test("development reference policy stays outside the shipped payload", async () => {
-  const manifest = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+  const manifest = JSON.parse(await read("package.json"));
   assert.ok(!manifest.files.some((file) => file.startsWith("scripts") || file.startsWith("tests")));
+});
+
+test("isolated workers receive authority and their full operation contract", async () => {
+  const adapter = await read("references/codex-adapter.md");
+  assert.match(adapter, /generator receives[^\n]*Authority[^\n]*Generation[^\n]*schema/);
+  assert.match(adapter, /reviewer receives[^\n]*Authority[^\n]*ReviewPolicy[^\n]*Review schema/);
+  assert.match(adapter, /reviewer[^\n]*exploration constraints[^\n]*minority/);
+});
+
+test("required references are reused only after their current content is loaded", async () => {
+  const entry = await read("SKILL.md");
+  assert.match(entry, /requireRead\(path\)[^\n]*current installed revision[^\n]*once per context/);
+});
+
+test("mixed explicit forget operations preserve the requested order and report results", async () => {
+  const protocol = await read("references/protocol.sudo.md");
+  const run = protocol.slice(protocol.indexOf("  run(input) {"));
+  assert.ok(run.indexOf("memory.forgetBeforeEvaluation") >= 0);
+  assert.ok(run.indexOf("memory.forgetBeforeEvaluation") < run.indexOf("result ="));
+  assert.ok(run.indexOf("memory.forgetAfterEvaluation") > run.indexOf("result ="));
+  assert.match(run, /return result \+ memoryReceipts/);
 });

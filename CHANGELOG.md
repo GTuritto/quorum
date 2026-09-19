@@ -7,6 +7,39 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.1.75] - 2026-09-19
+
+### Fixed
+
+- Keep operational assumptions explicit through review and synthesis; agreement
+  between agents does not verify a claim.
+- Require the execution receipt for memory-only requests as well as deliberation.
+- Route memory reads and record-ID discovery through the bounded, validating
+  helper instead of reading the store directly.
+- Refuse to confirm an empty memory deletion while a pending or interrupted write
+  may still retain records.
+- Match record UUIDs without letter-case sensitivity, including duplicate
+  identity validation.
+- Use metadata for capability discovery; count any accidental inference probe
+  against the worker budget and disclose it.
+- Count failed CLI startup attempts before deciding whether the remaining budget
+  can fund a replacement and independent review.
+
+### Added
+
+- Explicit project decision records with save, historical retrieval, and scoped
+  forget operations. Include the Node helper in every installed skill payload,
+  with bounded records, atomic writes, project isolation, and Git exclusion.
+
+### Changed
+
+- Consolidate executable instructions into a compact SudoLang protocol,
+  with a minimal skill entry and Codex binding. Preserve the existing
+  deliberation controls and installer payload paths.
+- Use the original ASCII logo in the README instead of an SVG image. Remove
+  the SVG asset and generator; use one vibrant blue/teal ANSI color per
+  letter in supported terminals.
+
 ## [0.1.66] - 2026-09-18
 
 ### Changed
@@ -122,7 +155,8 @@ Release dates use UTC; npm recorded publication at 22:57:40 UTC.
 - Automated unit and integration coverage for installer behavior and payload
   integrity.
 
-[Unreleased]: https://github.com/GTuritto/quorum/compare/v0.1.66...HEAD
+[Unreleased]: https://github.com/GTuritto/quorum/compare/v0.1.75...HEAD
+[0.1.75]: https://github.com/GTuritto/quorum/compare/v0.1.66...v0.1.75
 [0.1.66]: https://github.com/GTuritto/quorum/compare/v0.1.65...v0.1.66
 [0.1.65]: https://github.com/GTuritto/quorum/compare/v0.1.61...v0.1.65
 [0.1.61]: https://github.com/GTuritto/quorum/compare/v0.1.60...v0.1.61

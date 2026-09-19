@@ -1,6 +1,14 @@
 # Quorum
 
-![Quorum terminal logo in muted blue and teal](https://raw.githubusercontent.com/GTuritto/quorum/main/assets/quorum-logo.svg)
+```text
+  ___   _   _   ___   ____   _   _  __  __
+ / _ \ | | | | / _ \ |  _ \ | | | ||  \/  |
+| | | || | | || | | || |_) || | | || |\/| |
+| |_| || |_| || |_| ||  _ < | |_| || |  | |
+ \__\_\ \___/  \___/ |_| \_\ \___/ |_|  |_|
+
+                    QUORUM v0.1.75
+```
 
 **Give your AI coding agent a structured second opinion.**
 
@@ -15,8 +23,8 @@ what your host supports.
 [![npm version](https://img.shields.io/npm/v/quorum-skill)](https://www.npmjs.com/package/quorum-skill)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Current release: **QUORUM v0.1.66**. The npm badge tracks the published package.
-Creative exploration is included in this release.
+Current release: **QUORUM v0.1.75**. The npm badge tracks the published package.
+This release adds explicit project decision memory and compact SudoLang instructions.
 
 ## Quick start
 
@@ -129,7 +137,7 @@ Exploration uses the existing tier and worker budget. Mini uses zero workers;
 full can generate several ideas per worker without expanding the panel. Direct
 or a leading `Direct:` bypasses structured exploration. The execution receipt
 reports whether exploration was applied, including any fallback. Controls reset
-between unrelated requests; no persistent memory or learning is added.
+between unrelated requests; exploration does not automatically save decisions or enable learning.
 
 ### Control deliberation
 
@@ -165,8 +173,10 @@ than enlarges a requested panel. When constrained, reserve reviewer slots first
 while retaining at least one candidate, and report any count reductions.
 
 Total worker budget differs from concurrency: a host may run fresh workers in
-successive waves. If the budget cannot fund 1+1 or isolated workers are
-unavailable, full falls back to mini. Insufficient time or reasoning budget can
+successive waves. Capability discovery uses host metadata; any accidental
+test-worker invocation also consumes the worker budget. If the budget cannot
+fund 1+1 or isolated workers are unavailable, full falls back to mini.
+Insufficient time or reasoning budget can
 force direct execution with disclosed uncertainty. User controls do not
 override host restrictions or authorize extra actions.
 
@@ -184,7 +194,66 @@ Role names never establish distinct-model participation.
 After reaching a decision, return to direct implementation. A compatible
 decision in the current conversation can be reused; changed evidence, goals,
 constraints, or assumptions require reassessment. An explicit full request
-starts a fresh run. This does not add persistent decision memory.
+starts a fresh run. Project records are saved and retrieved only when explicitly requested.
+
+### Project decision memory
+
+Quorum 0.1.75 supports explicit project memory. Ask your assistant:
+
+```text
+Remember this decision for this project, with its assumptions and when to reconsider.
+Show the saved decision about database storage.
+Forget the saved database decision for this project.
+Forget all Quorum memory for this project.
+```
+
+Saving is always explicit. Retrieval returns historical, unvalidated records;
+it does not make a past decision current advice. Automatic capture, global
+memory, and automatic decision reuse are not included. Records never authorize
+actions or override your current requirements.
+
+Records stay under the selected project's `.quorum/memory/`, excluded from Git.
+Git projects require Git to check that memory files are not already tracked.
+Forget removes the selected records without deleting unrelated files or settings.
+It does not erase chat history, Git history, external copies, or backups made by
+other tools. Do not save secrets or private reasoning.
+
+The installed skill includes a dependency-free helper for Node.js 18+:
+
+```sh
+node /path/to/installed/quorum/references/memory.mjs --help
+node /path/to/installed/quorum/references/memory.mjs save --project-root /absolute/project < record.json
+node /path/to/installed/quorum/references/memory.mjs read --project-root /absolute/project --query database
+node /path/to/installed/quorum/references/memory.mjs forget --project-root /absolute/project --id SAVED_UUID
+# Only when you intend to forget every Quorum record in that project:
+node /path/to/installed/quorum/references/memory.mjs forget --project-root /absolute/project --all
+```
+
+`record.json` contains only these fields:
+
+```json
+{
+  "decision": "Keep the database local",
+  "assumptions": ["A single writer is sufficient"],
+  "uncertainty": ["Future concurrency is unknown"],
+  "sources": [],
+  "reconsideration": [{"text": "Multiple writers become necessary", "basis": "confirmed"}]
+}
+```
+
+Conditions use `confirmed`, `inferred`, or `unknown` to preserve their basis.
+Empty arrays are valid when evidence or conditions are unknown. Saves return a
+stable ID; corrections require a new explicit save. Read accepts exactly one
+`--id` or `--query`, plus optional `--limit` (1–20, default 5), and reports omitted
+matches. Whole records are returned within a 64 KiB content budget. Stores are
+limited to 200 records and 1 MiB; each record is at most 32 KiB.
+
+Malformed/foreign stores, unsafe links, tracked content, and active write locks
+are refused. A failed operation is reported instead of falling back to manual
+file edits. A lock left by an interrupted process is not automatically removed;
+verify the owning process has stopped before recovering it. Incomplete temporary
+writes also block further mutations until recovered; cleanup errors report the
+affected path and may mean the preceding operation changed data.
 
 ## How it works
 
@@ -203,7 +272,7 @@ Mini runs can simulate several perspectives inside one model context. For full r
 
 The installer has no third-party package dependencies.
 
-The terminal banner uses one muted blue or teal color per letter on terminals
+The terminal banner uses one vibrant blue or teal color per letter on terminals
 with 256-color or true-color support. Set `NO_COLOR=1` to disable it. Redirected
 output, `TERM=dumb`, and limited-color terminals retain the plain ASCII logo.
 
@@ -218,14 +287,14 @@ npx quorum-skill
 Pin the exact release when reproducibility matters:
 
 ```sh
-npx quorum-skill@0.1.66
+npx quorum-skill@0.1.75
 ```
 
 `npx` may ask before downloading an uncached package. Put `-y` before the
 package name to suppress that npm prompt:
 
 ```sh
-npx -y quorum-skill@0.1.66 --all --dry-run
+npx -y quorum-skill@0.1.75 --all --dry-run
 ```
 
 This does not suppress Quorum's replacement confirmation. Pass Quorum's
@@ -236,13 +305,13 @@ This does not suppress Quorum's replacement confirmation. Pass Quorum's
 Download the tarball from npm into an empty working directory:
 
 ```sh
-npm pack quorum-skill@0.1.66
+npm pack quorum-skill@0.1.75
 ```
 
 On macOS or Linux:
 
 ```sh
-tar -xzf quorum-skill-0.1.66.tgz &&
+tar -xzf quorum-skill-0.1.75.tgz &&
 cd package &&
 ./install.sh
 ```
@@ -251,7 +320,7 @@ On Windows PowerShell with `tar` available, run each command after the previous
 one succeeds:
 
 ```powershell
-tar -xzf quorum-skill-0.1.66.tgz
+tar -xzf quorum-skill-0.1.75.tgz
 Set-Location .\package
 .\install.ps1
 ```
@@ -361,10 +430,10 @@ npx quorum-skill --update
 
 `--upgrade` is an exact alias. The installer performs no network request and
 does not choose a release. npm selects the package first, so this command
-applies version 0.1.66 explicitly:
+applies version 0.1.75 explicitly:
 
 ```sh
-npx quorum-skill@0.1.66 --update
+npx quorum-skill@0.1.75 --update
 ```
 
 An explicit update target stays absent when it is not installed:

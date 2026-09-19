@@ -8,14 +8,14 @@ const ENABLE_MOUSE = "\u001b[?1000h\u001b[?1006h";
 const DISABLE_MOUSE = "\u001b[?1000l\u001b[?1006l";
 const CLEAR_SCREEN = "\u001b[2J\u001b[H";
 
-// One solid color per letter, shared with the README SVG generator.
+// One solid terminal color per ASCII letter.
 export const BANNER_COLORS = Object.freeze([
-  { hex: "#5fafaf", ansi256: 73 },
-  { hex: "#5f87af", ansi256: 67 },
-  { hex: "#87afaf", ansi256: 109 },
-  { hex: "#5f9fd7", ansi256: 74 },
-  { hex: "#87d7d7", ansi256: 116 },
-  { hex: "#87afd7", ansi256: 110 },
+  { hex: "#00d7d7", ansi256: 44 },
+  { hex: "#5fafff", ansi256: 75 },
+  { hex: "#87d7ff", ansi256: 117 },
+  { hex: "#00afff", ansi256: 39 },
+  { hex: "#5fffff", ansi256: 87 },
+  { hex: "#87afff", ansi256: 111 },
 ].map(Object.freeze));
 
 // The original FIGlet letter boundaries; preserve every space and glyph.

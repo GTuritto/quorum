@@ -7,7 +7,7 @@
 | |_| || |_| || |_| ||  _ < | |_| || |  | |
  \__\_\ \___/  \___/ |_| \_\ \___/ |_|  |_|
 
-                    QUORUM v0.1.75
+                    QUORUM v0.1.80
 ```
 
 **Give your AI coding agent a structured second opinion.**
@@ -23,8 +23,9 @@ what your host supports.
 [![npm version](https://img.shields.io/npm/v/quorum-skill)](https://www.npmjs.com/package/quorum-skill)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Current release: **QUORUM v0.1.75**. The npm badge tracks the published package.
-This release adds explicit project decision memory and compact SudoLang instructions.
+Current release: **QUORUM v0.1.80**. The npm badge tracks the published package.
+This version adds opt-in automatic project capture with persistent on/off controls
+and compact SudoLang instructions.
 
 ## Quick start
 
@@ -137,7 +138,8 @@ Exploration uses the existing tier and worker budget. Mini uses zero workers;
 full can generate several ideas per worker without expanding the panel. Direct
 or a leading `Direct:` bypasses structured exploration. The execution receipt
 reports whether exploration was applied, including any fallback. Controls reset
-between unrelated requests; exploration does not automatically save decisions or enable learning.
+between unrelated requests; exploration does not enable memory or learning. Eligible final decisions may be
+captured only when project memory was explicitly enabled.
 
 ### Control deliberation
 
@@ -194,26 +196,48 @@ Role names never establish distinct-model participation.
 After reaching a decision, return to direct implementation. A compatible
 decision in the current conversation can be reused; changed evidence, goals,
 constraints, or assumptions require reassessment. An explicit full request
-starts a fresh run. Project records are saved and retrieved only when explicitly requested.
+starts a fresh run. Project records are retrieved only when explicitly requested; saving may also
+follow explicitly enabled project capture.
 
 ### Project decision memory
 
-Quorum 0.1.75 supports explicit project memory. Ask your assistant:
+Quorum 0.1.80 supports explicit project memory and opt-in automatic capture.
+Automatic capture is **off by default**. Ask your assistant:
 
 ```text
+Turn Quorum memory on for this project.
+Turn Quorum memory off for this project.
+Is Quorum memory on for this project?
 Remember this decision for this project, with its assumptions and when to reconsider.
 Show the saved decision about database storage.
 Forget the saved database decision for this project.
 Forget all Quorum memory for this project.
 ```
 
-Saving is always explicit. Retrieval returns historical, unvalidated records;
-it does not make a past decision current advice. Automatic capture, global
-memory, and automatic decision reuse are not included. Records never authorize
-actions or override your current requirements.
+On persists authorization to capture meaningful final decisions and material
+changes from future Quorum runs in this project. It does not backfill earlier
+turns or record every answer. Off stops automatic capture and preserves records.
+Explicit save/retrieve/forget still works while off and never enables capture.
+Forget preserves the setting, so future decisions may be captured again while on.
+A request containing an explicit memory operation does not also auto-capture.
 
-Records stay under the selected project's `.quorum/memory/`, excluded from Git.
-Git projects require Git to check that memory files are not already tracked.
+Retrieval returns historical, unvalidated records; it does not make a past
+decision current advice. Automatic retrieval/reuse, global memory, and learning
+are not included. Records never authorize actions or override current requirements.
+
+The skill decides whether a final outcome qualifies, preserving uncertainty and
+unresolved dissent. The helper checks the stored setting again under its write
+lock. It suppresses an exact repeat of the immediately preceding full record
+payload; changes to assumptions, uncertainty, sources, or conditions are retained.
+This is conservative exact matching, not semantic deduplication: paraphrases and
+repeats separated by other decisions may produce new records. Explicit saves
+always append. A missing or invalid setting never authorizes automatic capture.
+
+Records stay under the selected project's `.quorum/memory/`; the persistent
+setting lives in `.quorum/config.json`. Both are excluded from Git by managed
+ignore files. Git projects require Git to reject already-tracked memory/config.
+Settings use an owner/schema/project-bound envelope; foreign or malformed config
+is refused, while explicit save/read/forget remains available independently.
 Forget removes the selected records without deleting unrelated files or settings.
 It does not erase chat history, Git history, external copies, or backups made by
 other tools. Do not save secrets or private reasoning.
@@ -222,12 +246,21 @@ The installed skill includes a dependency-free helper for Node.js 18+:
 
 ```sh
 node /path/to/installed/quorum/references/memory.mjs --help
+node /path/to/installed/quorum/references/memory.mjs on --project-root /absolute/project
+node /path/to/installed/quorum/references/memory.mjs status --project-root /absolute/project
+node /path/to/installed/quorum/references/memory.mjs off --project-root /absolute/project
 node /path/to/installed/quorum/references/memory.mjs save --project-root /absolute/project < record.json
 node /path/to/installed/quorum/references/memory.mjs read --project-root /absolute/project --query database
 node /path/to/installed/quorum/references/memory.mjs forget --project-root /absolute/project --id SAVED_UUID
 # Only when you intend to forget every Quorum record in that project:
 node /path/to/installed/quorum/references/memory.mjs forget --project-root /absolute/project --all
 ```
+
+The skill uses `capture --project-root ABS < record.json` for eligible automatic
+saves. It reports `saved: false` with `reason: off` or `reason: duplicate` when
+skipped; successful saves return an ID. `status` reads only the setting and
+creates nothing. Settings and record mutations share an exclusive lock; a busy
+operation must be retried, never reported as successful.
 
 `record.json` contains only these fields:
 
@@ -287,14 +320,14 @@ npx quorum-skill
 Pin the exact release when reproducibility matters:
 
 ```sh
-npx quorum-skill@0.1.75
+npx quorum-skill@0.1.80
 ```
 
 `npx` may ask before downloading an uncached package. Put `-y` before the
 package name to suppress that npm prompt:
 
 ```sh
-npx -y quorum-skill@0.1.75 --all --dry-run
+npx -y quorum-skill@0.1.80 --all --dry-run
 ```
 
 This does not suppress Quorum's replacement confirmation. Pass Quorum's
@@ -305,13 +338,13 @@ This does not suppress Quorum's replacement confirmation. Pass Quorum's
 Download the tarball from npm into an empty working directory:
 
 ```sh
-npm pack quorum-skill@0.1.75
+npm pack quorum-skill@0.1.80
 ```
 
 On macOS or Linux:
 
 ```sh
-tar -xzf quorum-skill-0.1.75.tgz &&
+tar -xzf quorum-skill-0.1.80.tgz &&
 cd package &&
 ./install.sh
 ```
@@ -320,7 +353,7 @@ On Windows PowerShell with `tar` available, run each command after the previous
 one succeeds:
 
 ```powershell
-tar -xzf quorum-skill-0.1.75.tgz
+tar -xzf quorum-skill-0.1.80.tgz
 Set-Location .\package
 .\install.ps1
 ```
@@ -430,10 +463,10 @@ npx quorum-skill --update
 
 `--upgrade` is an exact alias. The installer performs no network request and
 does not choose a release. npm selects the package first, so this command
-applies version 0.1.75 explicitly:
+applies version 0.1.80 explicitly:
 
 ```sh
-npx quorum-skill@0.1.75 --update
+npx quorum-skill@0.1.80 --update
 ```
 
 An explicit update target stays absent when it is not installed:

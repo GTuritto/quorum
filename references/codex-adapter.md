@@ -29,7 +29,7 @@ CodexBinding {
     conversation by default; files only with authorized project changes or explicit persistence request
     compact Markdown|YAML|JSON RecoveryCapsule; no private reasoning; validate revision/assumptions on recovery
   }
-  Memory: bind canonical Memory to installed references/memory.mjs; explicit project operation only; never host-global memory
+  Memory: bind canonical Memory to installed references/memory.mjs; project controls + eligible capture; never host-global memory
   Output { portable Decision + required receipt; coordinator synthesis; no hidden deliberation }
   authority: worker analysis never authorizes commit/push/deploy/publish/messages/purchases/deletion
 }

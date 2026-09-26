@@ -1,8 +1,8 @@
 ---
 name: quorum
-description: "Multi-perspective decisions: ambiguity|stakes|persistent goals; isolated candidates→anonymous review→synthesis. Explicit project memory save/read/forget; routine lookup/fix→direct; leading Direct: bypasses deliberation, not authorization."
+description: "Multi-perspective decisions: ambiguity|stakes|persistent goals; isolated candidates→anonymous review→synthesis. Opt-in project capture; memory on/off/save/read/forget; routine lookup/fix→direct; leading Direct: bypasses deliberation, not authorization."
 metadata:
-  version: "0.1.75"
+  version: "0.1.80"
 ---
 
 # Quorum

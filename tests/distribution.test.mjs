@@ -34,7 +34,7 @@ test("builds matching tgz, zip, and SHA256SUMS", async () => {
     const outputDirectory = path.join(temporaryRoot, "dist");
     const result = await buildDistribution({ root, outputDirectory });
 
-    assert.equal(result.version, "0.1.75");
+    assert.equal(result.version, "0.1.80");
     assert.deepEqual(result.packageFiles, EXPECTED_PACKAGE_FILES);
 
     const tarEntries = execFileSync("tar", ["-tzf", result.tgzPath], {
@@ -108,7 +108,7 @@ test("runs version and maintenance dry-runs from the packed npm executable", asy
       "quorum-skill",
       "--version",
     ], { cwd: workDirectory, env: environment });
-    assert.equal(version, "quorum-skill 0.1.75\n");
+    assert.equal(version, "quorum-skill 0.1.80\n");
 
     const dryRun = runNpm([
       "exec",
@@ -162,5 +162,30 @@ test("runs version and maintenance dry-runs from the packed npm executable", asy
     ], { cwd: workDirectory, env: environment });
     assert.match(uninstallDryRun, /SKIPPED.*missing/);
     await assert.rejects(access(path.join(projectRoot, ".agents", "skills", "quorum")));
+  });
+});
+
+test("packed installer delivers working project controls without capturing during install", async () => {
+  await withTempDirectory(async (temporaryRoot) => {
+    const built = await buildDistribution({ root, outputDirectory: path.join(temporaryRoot, "dist") });
+    execFileSync("tar", ["-xzf", built.tgzPath, "-C", temporaryRoot]);
+    const unpacked = path.join(temporaryRoot, "package");
+    const project = path.join(temporaryRoot, "project");
+    await mkdir(project);
+    execFileSync(process.execPath, [path.join(unpacked, "installer/install.mjs"), "--targets", "codex", "--project-root", project, "--yes"]);
+    await assert.rejects(access(path.join(project, ".quorum")));
+    const helper = path.join(project, ".agents/skills/quorum/references/memory.mjs");
+    assert.deepEqual(await readFile(helper), await readFile(path.join(root, "references/memory.mjs")));
+    const invoke = (action, args = [], record) => JSON.parse(execFileSync(process.execPath,
+      [helper, action, "--project-root", project, ...args], { encoding: "utf8", input: record && JSON.stringify(record) }));
+    const record = { decision: "Use the local store", assumptions: [], uncertainty: ["Unproven capacity"], sources: [], reconsideration: [] };
+    assert.equal(invoke("status").enabled, false);
+    assert.equal(invoke("on").enabled, true);
+    assert.equal(invoke("capture", [], record).saved, true);
+    assert.equal(invoke("capture", [], record).reason, "duplicate");
+    assert.equal(invoke("off").enabled, false);
+    assert.equal(invoke("read", ["--query", "store"]).matched, 1);
+    assert.equal(invoke("forget", ["--all"]).forgotten, 1);
+    assert.equal(invoke("status").enabled, false);
   });
 });

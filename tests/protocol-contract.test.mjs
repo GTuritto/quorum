@@ -49,7 +49,7 @@ test("canonical contract retains controls, allocation, review, and provenance", 
     /one repair[^\n]*same worker/i, /no candidates after review/i,
     /never[^\n]*(expose|persist)[^\n]*hidden/i,
     /untrusted[^\n]*authority/i, /none[^\n]*direct/i,
-    /no automatic decision memory/i, /maxWorkers=plan\.cap even for direct\|mini/,
+    /no automatic decision reuse/i, /maxWorkers=plan\.cap even for direct\|mini/,
   ]) assert.match(protocol, rule);
 });
 
@@ -92,4 +92,21 @@ test("mixed explicit forget operations preserve the requested order and report r
   assert.ok(run.indexOf("memory.forgetBeforeEvaluation") < run.indexOf("result ="));
   assert.ok(run.indexOf("memory.forgetAfterEvaluation") > run.indexOf("result ="));
   assert.match(run, /return result \+ memoryReceipts/);
+});
+
+test("capture is opt-in, final-only, and separate from explicit operations and reuse", async () => {
+  const protocol = await read("references/protocol.sudo.md");
+  const memory = protocol.slice(protocol.indexOf("  Memory {"), protocol.indexOf("  Goals {"));
+  assert.match(memory, /persist only with explicit user intent; default off/);
+  assert.match(memory, /settings only, no records/);
+  assert.match(memory, /no automatic record retrieval\/reuse\/global memory\/learning/);
+  assert.match(memory, /unresolved dissent in uncertainty/);
+  assert.match(memory, /unsafe\/oversized summary => skip capture/);
+  assert.match(memory, /no automatic recapture in forget request/);
+  const run = protocol.slice(protocol.indexOf("  run(input) {"));
+  const capture = run.indexOf("captureIfEnabled");
+  assert.ok(capture > run.indexOf("result ="));
+  assert.ok(capture > run.indexOf("memory.forgetAfterEvaluation"));
+  assert.match(run, /!memory.hasExplicitOperation && eligibleFinalDecision\(result\)/);
+  assert.match(run, /!memory.storageOnly && memory.settingRequested/);
 });

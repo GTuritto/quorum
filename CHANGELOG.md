@@ -7,6 +7,28 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.1.80] - 2026-09-26
+
+### Added
+
+- 0.1.80 project memory controls: persistent on/off, read-only setting status,
+  and opt-in capture of eligible final decisions; automatic capture defaults off.
+- Capture rechecks enablement under the shared write lock and suppresses exact
+  adjacent full-payload duplicates while preserving changed uncertainty and dissent.
+
+### Changed
+
+- Extend the compact SudoLang memory contract without enabling automatic
+  retrieval, decision reuse, global memory, or learning. Explicit operations work
+  while off; forget preserves the on/off setting.
+- Keep configuration project-bound, schema-validated, atomically written, and
+  excluded from Git alongside records. Existing record format remains compatible.
+
+### Fixed
+
+- Run the memory helper correctly through symlinked parent paths by comparing
+  canonical CLI/module paths, including installed helpers under macOS `/var`.
+
 ## [0.1.75] - 2026-09-19
 
 ### Fixed
@@ -155,7 +177,8 @@ Release dates use UTC; npm recorded publication at 22:57:40 UTC.
 - Automated unit and integration coverage for installer behavior and payload
   integrity.
 
-[Unreleased]: https://github.com/GTuritto/quorum/compare/v0.1.75...HEAD
+[Unreleased]: https://github.com/GTuritto/quorum/compare/v0.1.80...HEAD
+[0.1.80]: https://github.com/GTuritto/quorum/compare/v0.1.75...v0.1.80
 [0.1.75]: https://github.com/GTuritto/quorum/compare/v0.1.66...v0.1.75
 [0.1.66]: https://github.com/GTuritto/quorum/compare/v0.1.65...v0.1.66
 [0.1.65]: https://github.com/GTuritto/quorum/compare/v0.1.61...v0.1.65

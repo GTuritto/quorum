@@ -7,6 +7,7 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const OWNER = "quorum";
+const MAX_CONFIG = 4096;
 const MAX_STORE = 1024 * 1024;
 const MAX_RECORD = 32 * 1024;
 const MAX_OUTPUT = 64 * 1024;
@@ -43,9 +44,11 @@ function validateInput(input) {
   keys(input, ["action", "projectRoot", "record", "id", "query", "limit", "all"]);
   if (typeof input.projectRoot !== "string" || !path.isAbsolute(input.projectRoot)) throw new Error("Explicit absolute project root required");
   const { action, id, query, record, all, limit } = input;
-  if (!["save", "read", "forget"].includes(action)) throw new Error("Expected save, read, or forget");
+  if (!["save", "capture", "read", "forget", "on", "off", "status"].includes(action)) throw new Error("Expected save, capture, read, forget, on, off, or status");
   if (id !== undefined && (typeof id !== "string" || !UUID.test(id))) throw new Error("Invalid record ID");
-  if (action === "save") {
+  if (["on", "off", "status"].includes(action)) {
+    if ([id, query, record, all, limit].some((v) => v !== undefined)) throw new Error("Controls accept only a project root");
+  } else if (action === "save" || action === "capture") {
     if ([id, query, all, limit].some((v) => v !== undefined)) throw new Error("Save accepts only a record");
     validateRecord(record);
   } else if (action === "read") {
@@ -76,6 +79,9 @@ export async function memoryOperation(input, { fs = realFs } = {}) {
   const projectRoot = await fs.realpath(input.projectRoot);
   const dirs = [projectRoot, path.join(projectRoot, ".quorum"), path.join(projectRoot, ".quorum", "memory")];
   const dir = dirs[2], store = path.join(dir, "records.json"), lockPath = path.join(dir, ".lock"), ignorePath = path.join(dir, ".gitignore");
+  const config = path.join(dirs[1], "config.json");
+  const configOperation = ["on", "off", "status", "capture"].includes(input.action);
+  const settingMutation = ["on", "off"].includes(input.action);
   const identities = new Map();
   async function checkPaths(create = false) {
     for (const p of dirs) {
@@ -119,9 +125,26 @@ export async function memoryOperation(input, { fs = realFs } = {}) {
     }
     if (!found) return;
     let tracked;
-    try { tracked = execFileSync("git", ["-C", projectRoot, "ls-files", "-z", "--", ".quorum/memory"], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }); }
+    try { tracked = execFileSync("git", ["-C", projectRoot, "ls-files", "-z", "--", ...(configOperation ? [".quorum/config.json", ".quorum/.gitignore", ".quorum/memory"] : [".quorum/memory"])], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }); }
     catch { throw new Error("Cannot verify Git exclusion; Git is required for memory in Git projects"); }
     if (tracked.length) throw new Error("Memory path contains tracked files; remove them from the Git index before using memory");
+  }
+  async function readConfig() {
+    await checkPaths();
+    const raw = await readFileSafe(config, MAX_CONFIG);
+    if (raw === null) return { raw, data: { owner: OWNER, schemaVersion: 1, projectRoot, enabled: false } };
+    let data;
+    try { data = JSON.parse(raw); } catch { throw new Error("Malformed memory configuration JSON"); }
+    keys(data, ["owner", "schemaVersion", "projectRoot", "enabled"]);
+    if (data.owner !== OWNER || data.schemaVersion !== 1) throw new Error("Foreign configuration owner or unsupported schema");
+    if (data.projectRoot !== projectRoot) throw new Error("Configuration belongs to a different project");
+    if (typeof data.enabled !== "boolean") throw new Error("Invalid memory enabled setting");
+    return { raw, data };
+  }
+  async function ensureIgnore(p, content) {
+    const ignore = await readFileSafe(p, 1024);
+    if (ignore !== null && ignore !== content) throw new Error("Foreign memory .gitignore; expected complete exclusion");
+    if (ignore === null) await fs.writeFile(p, content, { flag: "wx", mode: 0o600 });
   }
   async function readStore() {
     await checkPaths();
@@ -148,6 +171,12 @@ export async function memoryOperation(input, { fs = realFs } = {}) {
   }
   await checkPaths();
   await rejectTracked();
+  if (configOperation) {
+    const { data } = await readConfig();
+    if (input.action === "status") return { projectRoot, enabled: data.enabled };
+    // Off is a no-op for capture: do not open records or initialize storage.
+    if (input.action === "capture" && !data.enabled) return { projectRoot, saved: false, reason: "off" };
+  }
   if (input.action === "read") {
     const { data } = await readStore();
     const matches = data.records.filter((record) => input.id ? record.id.toLowerCase() === input.id.toLowerCase() :
@@ -169,7 +198,7 @@ export async function memoryOperation(input, { fs = realFs } = {}) {
     }
     return { projectRoot, forgotten: 0 };
   }
-  await checkPaths(input.action === "save");
+  await checkPaths(input.action === "save" || input.action === "capture" || settingMutation);
   await assertKind(lockPath, false);
   let lock;
   try { lock = await fs.open(lockPath, "wx", 0o600); }
@@ -179,13 +208,29 @@ export async function memoryOperation(input, { fs = realFs } = {}) {
     lockInfo = await lock.stat();
     await rejectResidualWrites();
     await lock.writeFile(`${process.pid}\n`);
-    const before = await readStore();
+    // Configuration and records share the existing lock, including old save/forget clients.
+    const captureConfig = input.action === "capture" ? await readConfig() : null;
+    if (captureConfig && !captureConfig.data.enabled) return { projectRoot, saved: false, reason: "off" };
+    if (settingMutation || captureConfig) await ensureIgnore(path.join(dirs[1], ".gitignore"), ".gitignore\n/config.json\n");
+    const readTarget = settingMutation ? readConfig : readStore;
+    const target = settingMutation ? config : store;
+    const before = await readTarget();
     const data = before.data;
     let result;
-    if (input.action === "save") {
-      const ignore = await readFileSafe(ignorePath, 1024);
-      if (ignore !== null && ignore !== "*\n") throw new Error("Foreign memory .gitignore; expected complete exclusion");
-      if (ignore === null) await fs.writeFile(ignorePath, "*\n", { flag: "wx", mode: 0o600 });
+    if (settingMutation) {
+      await ensureIgnore(ignorePath, "*\n");
+      data.enabled = input.action === "on";
+      result = { projectRoot, enabled: data.enabled };
+      if (before.raw !== null && JSON.parse(before.raw).enabled === data.enabled) return result;
+    } else if (input.action === "save" || input.action === "capture") {
+      await ensureIgnore(ignorePath, "*\n");
+      // Exact, adjacent deduplication preserves reversals and all uncertainty.
+      const signature = (r) => JSON.stringify(RECORD_FIELDS.map((field) => field === "reconsideration"
+        ? r[field].map(({ text, basis }) => [text, basis]) : r[field]));
+      const latest = data.records.at(-1);
+      if (input.action === "capture" && latest && signature(latest) === signature(input.record)) {
+        return { projectRoot, saved: false, reason: "duplicate", id: latest.id };
+      }
       const record = { ...input.record, id: randomUUID(), createdAt: new Date().toISOString() };
       validateRecord(record, true);
       data.records.push(record);
@@ -198,17 +243,20 @@ export async function memoryOperation(input, { fs = realFs } = {}) {
       data.records = remaining;
     }
     const serialized = JSON.stringify(data) + "\n";
-    if (Buffer.byteLength(serialized) > MAX_STORE) throw new Error("Memory store capacity reached (1 MiB)");
-    if (data.records.length) {
+    if (Buffer.byteLength(serialized) > (settingMutation ? MAX_CONFIG : MAX_STORE)) {
+      throw new Error(settingMutation ? "Configuration exceeds 4 KiB" : "Memory store capacity reached (1 MiB)");
+    }
+    if (settingMutation || data.records.length) {
       temporary = path.join(dir, `.write-${randomUUID()}.tmp`);
       const handle = await fs.open(temporary, "wx", 0o600);
       try { await handle.writeFile(serialized); await handle.sync(); } finally { await handle.close(); }
     }
     await checkPaths();
     await rejectTracked();
-    if ((await readStore()).raw !== before.raw) throw new Error("Memory records changed during operation");
-    if (temporary) { await fs.rename(temporary, store); temporary = undefined; }
-    else if (before.raw !== null) await fs.unlink(store);
+    if (captureConfig && (await readConfig()).raw !== captureConfig.raw) throw new Error("Memory setting changed during capture");
+    if ((await readTarget()).raw !== before.raw) throw new Error("Memory data changed during operation");
+    if (temporary) { await fs.rename(temporary, target); temporary = undefined; }
+    else if (before.raw !== null) await fs.unlink(target);
     return result;
   } catch (error) {
     operationError = error;
@@ -238,7 +286,7 @@ export async function memoryOperation(input, { fs = realFs } = {}) {
 async function cli() {
   const [action, ...args] = process.argv.slice(2);
   if (action === "--help") {
-    console.log("Quorum memory: save --project-root ABS < record.json | read --project-root ABS (--id UUID | --query TEXT) [--limit 1..20] | forget --project-root ABS (--id UUID | --all)");
+    console.log("Quorum memory: on|off|status --project-root ABS | save|capture --project-root ABS < record.json | read --project-root ABS (--id UUID | --query TEXT) [--limit 1..20] | forget --project-root ABS (--id UUID | --all)");
     return;
   }
   const input = { action };
@@ -252,7 +300,7 @@ async function cli() {
       input[name] = name === "limit" ? Number(args[++i]) : args[++i];
     }
   }
-  if (action === "save") {
+  if (action === "save" || action === "capture") {
     const chunks = [];
     let size = 0;
     for await (const chunk of process.stdin) {
@@ -264,6 +312,8 @@ async function cli() {
   }
   console.log(JSON.stringify(await memoryOperation(input)));
 }
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+// Node resolves module symlinks; compare canonical paths for installed entry points.
+const entryPath = process.argv[1] && await realFs.realpath(process.argv[1]).catch(() => null);
+if (entryPath === fileURLToPath(import.meta.url)) {
   cli().catch((error) => { console.error(`Quorum memory: ${error.message}`); process.exitCode = 1; });
 }

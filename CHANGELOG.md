@@ -7,6 +7,22 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.1.81] - 2026-10-01
+
+### Changed
+
+- Shorten the README around installation and everyday usage; move detailed
+  controls, installation options, and background into `docs/guide.md`.
+
+- Load a shared core for every Quorum request, deliberation rules for Mini/Full,
+  worker coordination for Full, and memory rules only before explicit operations
+  or eligible automatic capture. Direct retains authorization, goals and receipts.
+- Reuse current loaded references within a context and reload required content
+  after context loss or revision changes; model familiarity never replaces rules.
+- Ship all feature modules in npm and installed payloads. Static instruction
+  savings and fresh-host behavioral verification are tracked separately in
+  `docs/testing/staged-loading-smoke.md`.
+
 ## [0.1.80] - 2026-09-26
 
 ### Added

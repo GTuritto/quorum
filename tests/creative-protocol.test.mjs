@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const protocol = () => readFile(new URL("../references/protocol.sudo.md", import.meta.url), "utf8");
+const protocol = async () => (await Promise.all(["protocol.sudo.md", "deliberation.sudo.md"].map(
+  (file) => readFile(new URL(`../references/${file}`, import.meta.url), "utf8"),
+))).join("\n");
 
 test("canonical exploration contract preserves activation, invalidation, and receipts", async () => {
   const text = await protocol();

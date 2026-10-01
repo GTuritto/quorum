@@ -31,7 +31,9 @@ installation step is required.
 
 1. Fork the repository and create a focused branch.
 2. Keep protocol changes aligned across `SKILL.md`,
-   `references/protocol.sudo.md`, and runtime adapters where applicable.
+   the core `references/protocol.sudo.md`, feature modules, and runtime adapters.
+   Keep feature reads behind their core gates, before affected operations. Update
+   the package allowlist and staged-loading smoke procedure when modules change.
 3. Add or update tests for installer behavior changes.
 4. Keep `VERSION`, `package.json`, and `SKILL.md` version declarations aligned.
 5. Run the full verification suite.

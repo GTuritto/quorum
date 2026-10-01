@@ -275,7 +275,7 @@ test("install and update output identifies the running source version", async ()
       sourceRoot,
     });
     assert.equal(exitCode, 0);
-    assert.match(output.text(), /Source version: 0\.1\.80/);
+    assert.match(output.text(), /Source version: 0\.1\.81/);
     assert.match(output.text(), /PLAN\s+install/);
     assert.equal(errorOutput.text(), "");
   });
@@ -394,12 +394,15 @@ test("install and update leave a recognized legacy Codex copy unchanged", async 
 
 test("validates versions and source payload", async () => {
   const source = await validateSource(sourceRoot);
-  assert.equal(source.version, "0.1.80");
+  assert.equal(source.version, "0.1.81");
   assert.deepEqual(await payloadFiles(sourceRoot, false), [
     "SKILL.md",
     "VERSION",
     path.join("references", "codex-adapter.md"),
+    path.join("references", "deliberation.sudo.md"),
+    path.join("references", "full.sudo.md"),
     path.join("references", "memory.mjs"),
+    path.join("references", "memory.sudo.md"),
     path.join("references", "protocol.sudo.md"),
   ]);
   assert.equal((await payloadFiles(sourceRoot, true)).includes(path.join("agents", "openai.yaml")), true);
@@ -419,7 +422,7 @@ test("installs selected targets with target-specific payloads", async () => {
 
     const codex = path.join(homeDir, ".agents", "skills", "quorum");
     const claude = path.join(homeDir, ".claude", "skills", "quorum");
-    assert.equal((await readFile(path.join(codex, "VERSION"), "utf8")).trim(), "0.1.80");
+    assert.equal((await readFile(path.join(codex, "VERSION"), "utf8")).trim(), "0.1.81");
     assert.equal((await readFile(path.join(codex, "agents", "openai.yaml"), "utf8")).includes("Quorum"), true);
     await assert.rejects(readFile(path.join(claude, "agents", "openai.yaml")), /ENOENT/);
   });

@@ -34,7 +34,7 @@ test("builds matching tgz, zip, and SHA256SUMS", async () => {
     const outputDirectory = path.join(temporaryRoot, "dist");
     const result = await buildDistribution({ root, outputDirectory });
 
-    assert.equal(result.version, "0.1.80");
+    assert.equal(result.version, "0.1.81");
     assert.deepEqual(result.packageFiles, EXPECTED_PACKAGE_FILES);
 
     const tarEntries = execFileSync("tar", ["-tzf", result.tgzPath], {
@@ -108,7 +108,7 @@ test("runs version and maintenance dry-runs from the packed npm executable", asy
       "quorum-skill",
       "--version",
     ], { cwd: workDirectory, env: environment });
-    assert.equal(version, "quorum-skill 0.1.80\n");
+    assert.equal(version, "quorum-skill 0.1.81\n");
 
     const dryRun = runNpm([
       "exec",
@@ -174,6 +174,10 @@ test("packed installer delivers working project controls without capturing durin
     await mkdir(project);
     execFileSync(process.execPath, [path.join(unpacked, "installer/install.mjs"), "--targets", "codex", "--project-root", project, "--yes"]);
     await assert.rejects(access(path.join(project, ".quorum")));
+    for (const file of EXPECTED_PACKAGE_FILES.filter((file) => file.startsWith("references/"))) {
+      assert.deepEqual(await readFile(path.join(project, ".agents/skills/quorum", file)),
+        await readFile(path.join(root, file)), `Installed module bytes: ${file}`);
+    }
     const helper = path.join(project, ".agents/skills/quorum/references/memory.mjs");
     assert.deepEqual(await readFile(helper), await readFile(path.join(root, "references/memory.mjs")));
     const invoke = (action, args = [], record) => JSON.parse(execFileSync(process.execPath,

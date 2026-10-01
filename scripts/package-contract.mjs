@@ -15,7 +15,10 @@ export const EXPECTED_PACKAGE_FILES = Object.freeze([
   "installer/version.mjs",
   "package.json",
   "references/codex-adapter.md",
+  "references/deliberation.sudo.md",
+  "references/full.sudo.md",
   "references/memory.mjs",
+  "references/memory.sudo.md",
   "references/protocol.sudo.md",
 ]);
 

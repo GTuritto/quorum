@@ -1,8 +1,8 @@
 # Staged-loading verification
 
 Date: 2026-10-01. Version 0.1.81 source verification against the 0.1.80 baseline
-commit `9f28d03`. Source commit and push are authorized; npm publication and
-changes to active user installations are outside this request.
+commit `9f28d03`. npm publication was authorized on 2026-10-01 after the source
+commit and push. Changes to active user installations remain outside this request.
 
 ## Automated evidence
 

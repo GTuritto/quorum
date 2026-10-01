@@ -33,8 +33,7 @@ npx quorum-skill --targets claude
 ```
 
 Run `npx quorum-skill` to detect supported tools, or use `--help` for all options.
-This checkout is version **0.1.81**, pending npm publication. Once published,
-pin it with `npx quorum-skill@0.1.81 --targets codex`.
+To pin this release, use `npx quorum-skill@0.1.81 --targets codex`.
 
 ## Use it
 

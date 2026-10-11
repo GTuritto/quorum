@@ -10,13 +10,14 @@ Quorum {
   capabilities? = [GoalStore, ReasoningPolicy, WorkerPool, ArtifactStore]
   Input {
     request; context?; activeGoal?; explicitGoalIntent=false; runtimeCapabilities?; budget?
-    level = auto // auto|direct|mini|full; request-scoped
+    level = auto // auto|direct|mini|full|super; request-scoped
     exploration = auto // auto|on|off; request-scoped; explicit on/off override inference
-    candidates?; reviewers?; maxWorkers?; conversationDecision?
+    candidates?; reviewers?; maxWorkers?; conversationDecision?; inference? // Super model/effort profiles
     signals { exploratoryIntent=false; newAlternatives=false }
   }
   Controls {
     reset on unrelated request; natural language, not installer flags or saved settings
+    inference requires explicit super; auto never selects super; Direct: discards inference without reading Super
     level/exploration enums; counts safe integers: candidates/reviewers positive, maxWorkers nonnegative
     invalid => ask one focused clarification; pause dependent execution until resolved; counts alone never force full
     leading "Direct:" => ignore all unused deliberation controls, even invalid ones
@@ -65,7 +66,7 @@ Quorum {
     // discovery/brainstorm/reframe/new alternatives; difficulty alone never activates exploration
   }
   route(request, signals, explorationActive) {
-    if (level in [direct,mini,full]) return level // leading Direct already normalized
+    if (level in [direct,mini,full,super]) return level // leading Direct already normalized
     fresh = newEvidence || changedGoal || changedConstraints || changedMaterialAssumptions || reconsideration || newMaterialUncertainty
     creative = exploration==on || signals.exploratoryIntent || signals.newAlternatives
     // explicit on, exploratoryIntent, newAlternatives invalidate conversation reuse even when exploration=off
@@ -80,14 +81,14 @@ Quorum {
     requestedCandidates = candidates ?? defaultCandidateCount
     requestedReviewers = reviewers ?? defaultReviewerCount
     cap = maxWorkers ?? (anyExplicitCounts ? requestedCandidates+requestedReviewers : defaultMaxWorkers)
-    if (tier != full) return zeroWorkerPlan(tier, cap)
+    if (tier not in [full,super]) return zeroWorkerPlan(tier, cap)
     // Full module is required before capability discovery; never probe by launching workers
     if (cap < 2 || !isolatedWorkersAvailable) return miniPlan(cap, disclosedReason)
     reviewers = min(requestedReviewers, cap - 1)
     candidates = min(requestedCandidates, cap - reviewers)
     disclose reductions; candidates==1 => disclose limited independent alternative generation
     // no fixed upper panel size beyond targets, cap, host limits; cap never enlarges targets
-    return FullPlan(candidates, reviewers, cap)
+    return FullPlan(candidates, reviewers, cap, tier)
   }
   ProvenanceReceipt {
     requestedTier; tier; requestedCandidates; requestedReviewers; launchedCandidates; launchedReviewers
@@ -100,10 +101,11 @@ Quorum {
       | verified-distinct-models // actual distinct identities verified, never inferred from roles
       | isolated-models-unverified // isolation verified, model identities unknown
     isolation-unverified attempts => cannot establish full; preserve separately in workerProvenance
-    final full provenance from accepted valid results; all-attempt provenance retains failed/replaced workers
-    explicit invocation or mini/full => concise receipt; ordinary unrelated direct => omit
+    requestedTier==super => include Super.Receipt; actual super only with verified settings and allocated-slot coverage
+    final full/super provenance from accepted valid results; all-attempt provenance retains failed/replaced workers
+    explicit invocation or mini/full/super => concise receipt; ordinary unrelated direct => omit
     report requested/actual tiers, launches by role+total, reductions/fallback; valid counts if different
-    requestedExploration=input.exploration; explorationApplied=resolved.explorationActive && finalTier in [mini,full]
+    requestedExploration=input.exploration; explorationApplied=resolved.explorationActive && finalTier in [mini,full,super]
     full->mini retains applied exploration; final direct => false; option count never implies model/worker diversity
     output gate before final answer, including storageOnly: require concise receipt fields, never omit for brevity or early stop after helper
     compact receipt: requestedTier->tier; launchedCandidates+launchedReviewers=totalLaunches; maxWorkers; modelProvenance; explorationApplied; reductions/fallback if any
@@ -120,7 +122,10 @@ Quorum {
   run(input) {
     if (beginsWith(input.request,"Direct:")) {
       input = removePrefixAndIgnoreDeliberationControls(input); input.level=direct; input.exploration=auto
-    } else validateControlsOrAskOneFocusedQuestion(input)
+    } else {
+      if (input.level == super) requireRead("references/super.sudo.md")
+      validateControlsOrAskOneFocusedQuestion(input) // includes Super.Controls when requested, before dependent work
+    }
     resolved = resolveRequiredInputs(input) // retain required input handling on Direct
     goal = attachGoal(resolved) // explicit creation only; respect Goals + host binding
     if (hasExplicitMemoryIntent(resolved)) requireRead("references/memory.sudo.md")
@@ -135,12 +140,13 @@ Quorum {
     resolved.explorationActive = resolveExploration(resolved,signals)
     selectedTier = memory.storageOnly ? direct : route(resolved.request,signals,resolved.explorationActive)
     if (selectedTier == direct) resolved.explorationActive=false
-    if (selectedTier in [mini,full]) requireRead("references/deliberation.sudo.md")
-    if (selectedTier == full) requireRead("references/full.sudo.md") // before capability discovery/allocation/dispatch
+    if (selectedTier in [mini,full,super]) requireRead("references/deliberation.sudo.md")
+    if (selectedTier in [full,super]) requireRead("references/full.sudo.md") // before capability discovery/allocation/dispatch
     plan = allocate(resolved,selectedTier)
+    if (input.level == super) plan.inference = Super.prepare(plan,input,runtimeCapabilities) // before any worker dispatch
     result = memory.storageOnly ? executeMemory(memory)
       : plan.tier == direct ? executeDirect(resolved) // no feature-module symbols or worker dispatch
-      : execute(plan, Generation, Anonymize, ReviewPolicy, plan.tier == full ? Full : none, Synthesis, Failure)
+      : execute(plan, Generation, Anonymize, ReviewPolicy, plan.tier in [full,super] ? Full : none, Synthesis, Failure)
     // executeDirect still follows Authority, Goals, Decision, Recovery, MemoryGate and ProvenanceReceipt
     if (!memory.storageOnly && memory.saveRequested) memoryReceipts += saveExplicitFinalDecisionAfterSynthesis(result,memory)
     if (!memory.storageOnly && memory.forgetAfterEvaluation) memoryReceipts += executeExplicitForget(memory)

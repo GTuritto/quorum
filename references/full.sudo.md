@@ -1,12 +1,15 @@
 # Quorum Full Execution
 
-Extends the loaded core protocol; load only at its declared feature gate.
+Extends the loaded core protocol for Full and Super; load only at its declared feature gate.
+Super retains every Full rule and adds per-agent settings validation and receipts.
 
 ```sudo
 Quorum {
   Full {
     discover capabilities via metadata/help/version only, never inference probes or test workers; every delegated agent/model invocation consumes cap, even an accidental probe (failed candidate attempt, disclose)
     ledger=appendOnlyLaunchLedger; reserve planned review launches before every generator/replacement
+    super: before each dispatch bind the resolved profile to its candidate/reviewer slot; apply native host model/effort controls
+    super: record observed settings with the launch; mismatch stops further dispatch under Super.prepare, never resets the ledger
     log every dispatch attempt before awaiting; failures never refunded; replacements consume launches
     launch-tool call starts the attempt: shell/CLI argument/startup/permission errors still consume cap; retrying dispatch is a new launch, not same-worker repair
     example cap=2 + first candidate launch fails => mini with 1 spent launch; cannot fund replacement candidate + reserved reviewer

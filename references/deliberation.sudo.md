@@ -1,6 +1,7 @@
 # Quorum Deliberation
 
 Extends the loaded core protocol; load only at its declared feature gate.
+Every full condition below also applies to super, including fallback and provenance.
 
 ```sudo
 Quorum {

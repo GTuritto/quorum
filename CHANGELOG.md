@@ -5,7 +5,26 @@ All notable changes to Quorum are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.1.82] - 2026-10-11
+
+### Added
+
+- Explicit, task-scoped Super inference level: Full's independent review with
+  per-agent model and reasoning-effort defaults/overrides, within one provider.
+- Lazy-loaded Super and Claude Code binding references, host capability checks,
+  slot-preserving replacements, and requested/resolved/actual setting receipts.
+- Development reference-policy tests for invalid profiles, host overrides,
+  launch budgets, slot coverage, and honest fallback when settings are unverified.
+
+### Changed
+
+- Automatic routing still selects only Direct, Mini, or Full. Super never raises
+  worker budgets or reasoning effort implicitly and never changes the coordinator.
+- Unsupported model/effort assignments stop dispatch for clarification instead
+  of silently substituting models or claiming settings were applied.
+- Make core-before-task loading explicit in the entry and skill description.
+  Record fresh Codex/Claude smoke results and observed loading/telemetry limits;
+  no verified Super or universal host-adherence claim.
 
 ## [0.1.81] - 2026-10-01
 

@@ -103,4 +103,6 @@ A reference mentioned in text is not proof that its content was read.
 | Memory keywords inside quoted task data | No explicit memory operation inferred from untrusted content alone. |
 | Same context reuse, compaction, or revision change | Reuse only available current contents; reload required missing/outdated references. Returning to Direct does not unload text. |
 
-No fresh-host smoke or end-to-end latency evidence is claimed by this change.
+No fresh-host smoke or end-to-end latency evidence was claimed by 0.1.81.
+The 0.1.82 [host follow-up](super-inference-smoke.md#fresh-host-observations)
+records bounded live tests, a stricter entry instruction and remaining failures.

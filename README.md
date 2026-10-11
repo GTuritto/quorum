@@ -7,7 +7,7 @@
 | |_| || |_| || |_| ||  _ < | |_| || |  | |
  \__\_\ \___/  \___/ |_| \_\ \___/ |_|  |_|
 
-                    QUORUM v0.1.81
+                    QUORUM v0.1.82
 ```
 
 **Give your AI coding agent a structured second opinion.**
@@ -33,7 +33,7 @@ npx quorum-skill --targets claude
 ```
 
 Run `npx quorum-skill` to detect supported tools, or use `--help` for all options.
-To pin this release, use `npx quorum-skill@0.1.81 --targets codex`.
+To pin this release, use `npx quorum-skill@0.1.82 --targets codex`.
 
 ## Use it
 
@@ -49,12 +49,14 @@ In Codex, you can also invoke it with `$quorum`.
 
 ## Choose the depth
 
-Quorum selects a mode automatically, or you can ask for one:
+Quorum selects Direct, Mini, or Full automatically. You can also request a mode:
 
 - **Direct:** a straightforward answer without extra deliberation.
 - **Mini:** multiple perspectives in one context, without delegated workers.
 - **Full:** isolated candidates and independent review when your assistant
   supports delegation, with a disclosed fallback when it cannot run.
+- **Super:** explicitly requested Full deliberation with a model and
+  reasoning effort assigned per agent for a specific task. Never selected automatically.
 
 ```text
 Use mini Quorum to explore ways to simplify onboarding.

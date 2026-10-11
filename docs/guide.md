@@ -55,6 +55,8 @@ disagreement. You can choose the level of deliberation and bound worker usage.
 - **Mini:** apply multiple perspectives in one context, with zero delegated workers.
 - **Full:** use isolated candidates and independent review when the host supports
   delegation, then synthesize the findings. Fall back transparently when needed.
+- **Super:** explicitly request per-agent model/effort assignments
+  for a specific task, using Full's existing review process and worker budget.
 
 Mini is not independent model agreement. Full can use workers running the same
 model; distinct-model participation is claimed only when actually verified.
@@ -134,7 +136,9 @@ Use full Quorum with 1 candidate and 1 reviewer.
 | `level: direct` | No optional deliberation and no delegated workers. |
 | `level: mini` | Analyst, Skeptic, and Pragmatist perspectives in one context; zero delegated workers. |
 | `level: full` | Isolated candidates, anonymized independent review, and synthesis by the coordinator. |
-| `candidates`, `reviewers` | Positive integer worker targets for full runs; defaults are 3 and 1. |
+| `level: super` | Explicit task-scoped Full deliberation with validated model/effort assignments; never auto-selected. |
+| `inference` | Super-only defaults and per-agent model/effort overrides; omitted fields inherit. |
+| `candidates`, `reviewers` | Positive integer worker targets for Full/Super runs; defaults are 3 and 1. |
 | `maxWorkers` | Nonnegative integer cap on total launches, including failed workers and replacements; excludes the coordinator. |
 
 Explicit levels override automatic routing, and leading `Direct:` overrides
@@ -174,9 +178,86 @@ constraints, or assumptions require reassessment. An explicit full request
 starts a fresh run. Project records are retrieved only when explicitly requested; saving may also
 follow explicitly enabled project capture.
 
+### Super: per-agent model and effort assignments
+
+Use Super for a specific task that benefits from a deliberate inference allocation.
+It keeps Full's independent generation, anonymous review and coordinator synthesis.
+Auto never chooses it, and settings do not persist to unrelated requests. More
+models or higher effort are not evidence of better results. The coordinator keeps
+its current settings; only candidate and reviewer workers are configured.
+
+For example, where the host confirms these models and efforts are supported:
+
+```text
+Use Super Quorum for this migration-risk assessment with 3 candidates and
+1 reviewer, at most 4 launches. Use Astra/high by default, candidate 1 on
+Luna/low, candidate 2 on Sol/medium, and the remaining agents on Astra/high.
+Stay with the current provider. Verify the actual settings in the receipt.
+```
+
+On Claude Code, the equivalent request can name supported Opus, Sonnet and Haiku
+models and their supported efforts. These are examples, not a static availability
+list or a claim that identically named effort levels are equivalent across hosts.
+The host must resolve aliases to exact model IDs from current metadata.
+
+An explicit normalized control example is:
+
+```yaml
+level: super
+candidates: 3
+reviewers: 1
+maxWorkers: 4
+inference:
+  defaults:
+    model: inherit
+    effort: high
+  agents:
+    candidate-1:
+      model: <exact-supported-model-id>
+      effort: low
+    reviewer-1:
+      effort: high
+```
+
+Slots are `candidate-1` through the requested candidate count and `reviewer-1`
+through the reviewer count. Slot fields override defaults; omitted fields and
+`inherit` resolve to the coordinator's current model/effort. Inherited effort
+must also be supported by a different selected model. At least one concrete
+assignment is required. If you have not chosen profiles, provide an explicit
+allocation brief so the host can propose supported settings for the task, or it
+will ask a focused question. Assignment keys do not create additional workers.
+
+Unsupported combinations, unknown model identities, conflicting host overrides,
+or cross-provider selections stop dispatch for clarification. The same launch cap
+covers failures and replacements; replacements keep the failed slot's profile.
+If the cap reduces the panel, the receipt reports reductions and unused assignments.
+Ordinary Full remains available without this extra configuration contract.
+
+Codex binds supported `model` and `reasoning_effort` controls on fresh worker
+contexts. Claude Code uses supported `model`/`effort` invocation controls or scoped
+agent definitions; per-invocation effort is documented from v2.1.292. The installed
+version, model restrictions and environment overrides must be checked. Claude's
+extended-thinking on/off setting is inherited, not independently toggled by effort.
+No global settings are changed. See the [Claude Code binding](../references/claude-code-adapter.md).
+
+Each launch reports its slot, requested/resolved settings, actual observed
+provider/model/effort, and verification status. Passing a setting or asking a worker
+which model it uses is not proof. Unknown or substituted settings cannot produce
+a successful Super receipt. Valid independently reviewed work can still be reported
+as Full, with the mismatch disclosed; insufficient independent results fall back
+to Mini/Direct. Every spent launch remains counted. Settings are not disclosed to
+reviewers as author cues, and effort does not impose a hard token budget.
+
+`Direct:` ignores all profiles. Profiles supplied with explicit Direct, Mini, Full,
+or Auto require clarification rather than silently enabling Super. Memory-only
+requests remain Direct; assignments are unused and no workers launch.
+
+See [Super verification](testing/super-inference-smoke.md) for automated coverage
+and fresh-host observations, including limits on verifying effective settings.
+
 ### Project decision memory
 
-Quorum 0.1.81 supports explicit project memory and opt-in automatic capture.
+Quorum 0.1.82 supports explicit project memory and opt-in automatic capture.
 Automatic capture is **off by default**. Ask your assistant:
 
 ```text
@@ -267,8 +348,9 @@ affected path and may mean the preceding operation changed data.
 
 - [`SKILL.md`](../SKILL.md) defines activation, routing, safety, and output behavior.
 - [`references/protocol.sudo.md`](../references/protocol.sudo.md) is the mandatory shared core.
-- [`references/deliberation.sudo.md`](../references/deliberation.sudo.md) loads for Mini/Full.
-- [`references/full.sudo.md`](../references/full.sudo.md) loads before Full capability discovery and dispatch.
+- [`references/deliberation.sudo.md`](../references/deliberation.sudo.md) loads for Mini/Full/Super.
+- [`references/full.sudo.md`](../references/full.sudo.md) loads before Full/Super capability discovery and dispatch.
+- [`references/super.sudo.md`](../references/super.sudo.md) loads only for explicit Super, with its Claude Code binding when applicable.
 - [`references/memory.sudo.md`](../references/memory.sudo.md) loads before explicit memory operations or eligible automatic capture.
 - [`references/codex-adapter.md`](../references/codex-adapter.md) maps the protocol to Codex capabilities.
 - [`installer/`](../installer/) contains the dependency-free installation engine and terminal selector.
@@ -307,14 +389,14 @@ npx quorum-skill
 Pin the exact release when reproducibility matters:
 
 ```sh
-npx quorum-skill@0.1.81
+npx quorum-skill@0.1.82
 ```
 
 `npx` may ask before downloading an uncached package. Put `-y` before the
 package name to suppress that npm prompt:
 
 ```sh
-npx -y quorum-skill@0.1.81 --all --dry-run
+npx -y quorum-skill@0.1.82 --all --dry-run
 ```
 
 This does not suppress Quorum's replacement confirmation. Pass Quorum's
@@ -325,13 +407,13 @@ This does not suppress Quorum's replacement confirmation. Pass Quorum's
 Download the tarball from npm into an empty working directory:
 
 ```sh
-npm pack quorum-skill@0.1.81
+npm pack quorum-skill@0.1.82
 ```
 
 On macOS or Linux:
 
 ```sh
-tar -xzf quorum-skill-0.1.81.tgz &&
+tar -xzf quorum-skill-0.1.82.tgz &&
 cd package &&
 ./install.sh
 ```
@@ -340,7 +422,7 @@ On Windows PowerShell with `tar` available, run each command after the previous
 one succeeds:
 
 ```powershell
-tar -xzf quorum-skill-0.1.81.tgz
+tar -xzf quorum-skill-0.1.82.tgz
 Set-Location .\package
 .\install.ps1
 ```
@@ -450,10 +532,10 @@ npx quorum-skill --update
 
 `--upgrade` is an exact alias. The installer performs no network request and
 does not choose a release. npm selects the package first, so this command
-applies version 0.1.81 explicitly:
+applies version 0.1.82 explicitly:
 
 ```sh
-npx quorum-skill@0.1.81 --update
+npx quorum-skill@0.1.82 --update
 ```
 
 An explicit update target stays absent when it is not installed:

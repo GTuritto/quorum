@@ -1,3 +1,5 @@
+import { validateInference, resolveInference, profileForSlot, slotRole, inferenceReceipt } from './super-policy.mjs';
+
 /**
  * Development-only reference policy. Hosts normalize semantic inputs and enforce
  * their own restrictions; this module neither launches workers nor parses text.
@@ -7,6 +9,7 @@
  */
 const defaults = { candidates: 3, reviewers: 1 };
 const roles = ['candidate', 'reviewer'];
+const delegated = tier => tier === 'full' || tier === 'super';
 
 function integer(value, minimum, name) {
   if (!Number.isSafeInteger(value) || value < minimum) {
@@ -18,7 +21,8 @@ function integer(value, minimum, name) {
 /**
  * Input: level, exploration, directPrefix (already recognized leading Direct:),
  * candidates, reviewers, maxWorkers, invoked; capabilities
- * {isolatedWorkers, concurrency};
+ * {isolatedWorkers, concurrency, inference?}; Super inference profiles and host
+ * model/effort metadata are validated by super-policy.mjs.
  * signals {routine, approvedImplementation, newMaterialUncertainty,
  * consequential, difficultToReverse, uncertain, independentValue,
  * boundedAmbiguity, exploratoryIntent, newAlternatives}; decision {available,
@@ -29,8 +33,8 @@ export function planDeliberation(input = {}) {
   const reasons = [];
   const bypass = input.directPrefix === true;
   const requestedTier = bypass ? 'direct' : (input.level ?? 'auto');
-  if (!['auto', 'direct', 'mini', 'full'].includes(requestedTier)) {
-    throw new TypeError('level must be auto, direct, mini, or full');
+  if (!['auto', 'direct', 'mini', 'full', 'super'].includes(requestedTier)) {
+    throw new TypeError('level must be auto, direct, mini, full, or super');
   }
   const requestedExploration = bypass ? 'auto' : (input.exploration === undefined ? 'auto' : input.exploration);
   if (!['auto', 'on', 'off'].includes(requestedExploration)) {
@@ -41,6 +45,10 @@ export function planDeliberation(input = {}) {
     candidates: integer(input.candidates === undefined ? defaults.candidates : input.candidates, 1, 'candidates'),
     reviewers: integer(input.reviewers === undefined ? defaults.reviewers : input.reviewers, 1, 'reviewers'),
   };
+  if (!bypass && input.inference !== undefined && requestedTier !== 'super') {
+    throw new TypeError('inference assignments require explicit level=super');
+  }
+  const requestedInference = requestedTier === 'super' ? validateInference(input.inference, targets) : undefined;
   const maxWorkers = bypass ? 0 : integer(
     input.maxWorkers === undefined ? (explicitCounts ? targets.candidates + targets.reviewers : 4) : input.maxWorkers,
     0, 'maxWorkers',
@@ -78,16 +86,16 @@ export function planDeliberation(input = {}) {
     }
   }
   const capabilities = input.capabilities ?? {};
-  if (tier === 'full' && (maxWorkers < 2 || capabilities.isolatedWorkers === false || capabilities.concurrency === 0)) {
+  if (delegated(tier) && (maxWorkers < 2 || capabilities.isolatedWorkers === false || capabilities.concurrency === 0)) {
     reasons.push(maxWorkers < 2 ? 'Full requires at least two total launches; degraded to mini.' :
       'Isolated workers unavailable under host restrictions; degraded to mini.');
     tier = 'mini';
   }
   const allocated = { candidates: 0, reviewers: 0 };
-  if (tier === 'mini' && requestedTier === 'full') {
+  if (tier === 'mini' && delegated(requestedTier)) {
     reasons.push(`Requested ${targets.candidates}+${targets.reviewers} workers; actual allocation is 0+0 after degradation.`);
   }
-  if (tier === 'full') {
+  if (delegated(tier)) {
     allocated.reviewers = Math.min(targets.reviewers, maxWorkers - 1);
     allocated.candidates = Math.min(targets.candidates, maxWorkers - allocated.reviewers);
     if (allocated.candidates < targets.candidates || allocated.reviewers < targets.reviewers) {
@@ -97,12 +105,15 @@ export function planDeliberation(input = {}) {
   } else if (explicitCounts && !bypass) {
     reasons.push('Explicit worker counts are unused in direct or mini.');
   }
+  const inference = tier === 'super' ? resolveInference(requestedInference, capabilities) : undefined;
+  if (requestedTier === 'super' && tier !== 'super') reasons.push('Super assignments unused after capacity fallback.');
   const explorationActive = explorationRequested && tier !== 'direct';
   if (!bypass && requestedTier === 'direct' && explorationRequested) {
     reasons.push('Explicit direct level bypasses structured exploration.');
   }
   return {
     requestedTier, requestedExploration, tier, explorationActive, targets, allocated, maxWorkers, reusedDecision, reasons,
+    ...(requestedInference ? { requestedInference, inference } : {}),
     invoked: input.invoked === true || bypass || input.level !== undefined || input.exploration !== undefined ||
       explicitCounts || input.maxWorkers !== undefined,
   };
@@ -110,7 +121,7 @@ export function planDeliberation(input = {}) {
 
 function participation(plan, launches) {
   if (!Array.isArray(launches)) throw new TypeError('launches must be an array');
-  if (plan.tier !== 'full' && launches.length) throw new RangeError('Direct and mini plans permit zero worker launches');
+  if (!delegated(plan.tier) && launches.length) throw new RangeError('Direct and mini plans permit zero worker launches');
   if (launches.length > plan.maxWorkers) throw new RangeError('Worker launch cap exceeded, including failures and replacements');
   const launched = { candidates: 0, reviewers: 0 };
   const valid = { candidates: 0, reviewers: 0 };
@@ -140,10 +151,23 @@ function participation(plan, launches) {
  * This reserves the remaining planned reviews, and at least one replacement
  * review if every previous review failed. Concurrency never changes total cap.
  */
-export function dispatchEligibility(plan, launches, role) {
+export function dispatchEligibility(plan, launches, role, slot) {
   if (!roles.includes(role)) throw new TypeError('Worker role must be candidate or reviewer');
   const { launched, valid } = participation(plan, launches);
-  if (plan.tier !== 'full') return { allowed: false, reason: 'Only full launches workers.' };
+  if (!delegated(plan.tier)) return { allowed: false, reason: 'Only full or super launches workers.' };
+  if (plan.tier === 'super') {
+    try {
+      if (slotRole(slot, plan.allocated) !== role) return { allowed: false, reason: 'Slot does not match worker role.' };
+      profileForSlot(plan, slot);
+    } catch (error) { return { allowed: false, reason: error.message }; }
+    if (launches.some(launch => launch.slot === slot && launch.valid !== false)) {
+      return { allowed: false, reason: 'Slot already satisfied or in flight.' };
+    }
+    const observed = inferenceReceipt(plan, launches, []).attempts;
+    if (observed.some(attempt => ['mismatch', 'invalid-slot'].includes(attempt.status))) {
+      return { allowed: false, reason: 'Host configuration mismatch or invalid slot; clarify before further dispatch.' };
+    }
+  }
   const remaining = plan.maxWorkers - launches.length;
   if (remaining === 0) return { allowed: false, reason: 'Total launch cap exhausted.' };
   const pending = launches.filter(launch => launch.role === role && launch.valid === undefined).length;
@@ -167,7 +191,8 @@ export function dispatchEligibility(plan, launches, role) {
 
 /**
  * Records are in dispatch order: {id, role, valid, isolated, fresh, independent,
- * model, modelVerified}. Missing evidence is never presumed valid or verified.
+ * model, modelVerified}; Super also records slot, effort/provider and their
+ * verification flags. Missing evidence is never presumed valid or verified.
  * A host must establish anonymization and independence before marking them.
  * options.miniAvailable=false models exhausted time/reasoning for fallback.
  */
@@ -175,13 +200,18 @@ export function executionReceipt(plan, launches, options = {}) {
   const { launched, valid, accepted } = participation(plan, launches);
   const reasons = [...plan.reasons];
   let tier = plan.tier;
-  if (tier === 'full' && (!valid.candidates || !valid.reviewers)) {
+  if (delegated(tier) && (!valid.candidates || !valid.reviewers)) {
     tier = 'mini';
     reasons.push('Missing a valid isolated candidate or fresh independent review; degraded to mini.');
   }
   if (tier === 'mini' && options.miniAvailable === false) {
     tier = 'direct';
     reasons.push('Insufficient time or reasoning for mini; direct fallback preserves uncertainty.');
+  }
+  const inference = plan.requestedTier === 'super' ? inferenceReceipt(plan, launches, accepted) : undefined;
+  if (tier === 'super' && !inference.applied) {
+    tier = 'full';
+    reasons.push('Super settings or slot coverage not verified; reporting Full with all actual settings and uncertainty.');
   }
   const explorationApplied = plan.explorationActive === true && tier !== 'direct';
   if (plan.explorationActive === true && !explorationApplied) {
@@ -190,13 +220,13 @@ export function executionReceipt(plan, launches, options = {}) {
   if (valid.candidates !== launched.candidates || valid.reviewers !== launched.reviewers) {
     reasons.push('Failed or invalid worker results remain included in total launches.');
   }
-  if (plan.tier === 'full' && (launched.candidates < plan.allocated.candidates || launched.reviewers < plan.allocated.reviewers)) {
+  if (delegated(plan.tier) && (launched.candidates < plan.allocated.candidates || launched.reviewers < plan.allocated.reviewers)) {
     reasons.push(`Participation below planned ${plan.allocated.candidates}+${plan.allocated.reviewers}.`);
   }
   if (valid.candidates > plan.allocated.candidates || valid.reviewers > plan.allocated.reviewers) {
     reasons.push('Actual valid panel exceeds allocated targets; host dispatch did not follow the reference policy.');
   }
-  if (tier === 'full' && valid.candidates === 1 && plan.allocated.candidates !== 1) {
+  if (delegated(tier) && valid.candidates === 1 && plan.allocated.candidates !== 1) {
     reasons.push('A single valid candidate lacks independent alternative generation.');
   }
   // Final synthesis evidence and all attempted participation are distinct.
@@ -209,6 +239,7 @@ export function executionReceipt(plan, launches, options = {}) {
     workerProvenance, synthesis: 'coordinator', reusedDecision: plan.reusedDecision,
     showReceipt: plan.invoked || plan.tier !== 'direct' || launches.length > 0,
     reasons,
+    ...(inference ? { inference } : {}),
   };
 }
 

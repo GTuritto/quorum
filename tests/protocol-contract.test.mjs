@@ -134,15 +134,15 @@ test("ordinary Direct has a self-contained core and never enters deliberation", 
 test("feature gates load Mini and Full rules before allocation or execution", async () => {
   const core = await read("references/protocol.sudo.md");
   const run = core.slice(core.indexOf("  run(input) {"));
-  assert.match(run, /if \(selectedTier in \[mini,full\]\) requireRead\("references\/deliberation\.sudo\.md"\)/);
-  assert.match(run, /if \(selectedTier == full\) requireRead\("references\/full\.sudo\.md"\)/);
+  assert.match(run, /if \(selectedTier in \[mini,full,super\]\) requireRead\("references\/deliberation\.sudo\.md"\)/);
+  assert.match(run, /if \(selectedTier in \[full,super\]\) requireRead\("references\/full\.sudo\.md"\)/);
   const allocation = run.indexOf("plan = allocate(");
   for (const file of ["deliberation", "full"]) {
     const load = run.indexOf(`requireRead("references/${file}.sudo.md")`);
     assert.ok(load >= 0 && load < allocation);
   }
   assert.ok(allocation < run.indexOf("result ="));
-  assert.match(run, /plan.tier == full \? Full : none/);
+  assert.match(run, /plan.tier in \[full,super\] \? Full : none/);
   const mini = await read("references/deliberation.sudo.md");
   assert.doesNotMatch(mini, /requireRead\(/);
   assert.match(mini, /fallback retains launch ledger/);

@@ -1,6 +1,6 @@
 {
   "name": "quorum-skill",
-  "version": "0.1.81",
+  "version": "0.1.82",
   "description": "Structured second opinions for AI coding agents: challenge implementation plans, review code, and compare approaches in Codex and Claude Code.",
   "keywords": [
     "agent-skills",
@@ -48,12 +48,14 @@
     "installer/targets.mjs",
     "installer/uninstall.mjs",
     "installer/version.mjs",
+    "references/claude-code-adapter.md",
     "references/codex-adapter.md",
     "references/deliberation.sudo.md",
     "references/full.sudo.md",
     "references/memory.sudo.md",
     "references/protocol.sudo.md",
-    "references/memory.mjs"
+    "references/memory.mjs",
+    "references/super.sudo.md"
   ],
   "publishConfig": {
     "access": "public"

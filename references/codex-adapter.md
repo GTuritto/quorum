@@ -3,7 +3,7 @@
 ```sudo
 CodexBinding {
   core already loaded by Entry; canonical semantics, no local routing override
-  WorkerPool: when selectedTier == full, bind CodexWorkerPool from references/full.sudo.md before discovery/dispatch
+  WorkerPool: when selectedTier in [full,super], bind CodexWorkerPool from references/full.sudo.md before discovery/dispatch
   missing required contract => disclose; stop affected execution
   GoalStore {
     bind only available goal tools; explicit objective required for creation

@@ -10,11 +10,12 @@
                     QUORUM v0.1.82
 ```
 
-**Give your AI coding agent a structured second opinion.**
+**Give your AI assistant a structured second opinion.**
 
-Quorum helps your coding assistant challenge plans, review code, and compare
-approaches before you commit to a decision. It brings multiple perspectives
-together and reports a recommendation, disagreements, and uncertainty.
+Quorum helps your assistant challenge plans, compare approaches, and review
+code before you commit to a decision. Use it in coding sessions or general chat
+when another perspective could change your answer. It reports a recommendation,
+disagreements, and uncertainty.
 
 Works with Codex, Claude Code, Cursor, GitHub Copilot in VS Code, and Antigravity.
 Available reasoning modes depend on your assistant's capabilities.
@@ -37,12 +38,20 @@ To pin this release, use `npx quorum-skill@0.1.82 --targets codex`.
 
 ## Use it
 
-Start a new session in your assistant and ask:
+In a coding session, start a new session in your assistant and ask:
 
 ```text
 Use Quorum to review this implementation plan against the requirements.
 Use Quorum to review this code change and identify unsupported assumptions.
 Use Quorum to compare these two approaches and recommend one.
+```
+
+In a general chat project, you can use the same review process for a decision
+outside software development. Give the assistant your goals and constraints:
+
+```text
+Use Quorum to compare these study plans against my available time and goals.
+Challenge the assumptions and explain what could change the recommendation.
 ```
 
 In Codex, you can also invoke it with `$quorum`.
@@ -65,7 +74,7 @@ Use full Quorum with 1 candidate and 1 reviewer to assess this migration.
 
 Quorum uses your assistant's existing capabilities and needs no separate council
 service. It reports which mode actually ran. Extra review can take more time and
-model usage; verify consequential findings against your code and tests.
+model usage; verify consequential findings against relevant evidence and tests.
 
 ## Optional project memory
 

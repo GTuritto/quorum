@@ -4,7 +4,7 @@
 
 ## Quick start
 
-Requires **Node.js 18 or later** and a supported coding assistant.
+Requires **Node.js 18 or later** and a supported assistant.
 
 Install for Codex or Claude Code from your terminal:
 
@@ -14,8 +14,8 @@ npx quorum-skill --targets codex
 npx quorum-skill --targets claude
 ```
 
-Then start a new session in your assistant, provide an implementation plan and
-its relevant requirements, and ask:
+For a coding decision, start a new session in your assistant, provide an
+implementation plan and its relevant requirements, and ask:
 
 ```text
 Use Quorum to review this implementation plan before I start coding.
@@ -24,11 +24,19 @@ assumptions, compare alternatives where useful, and recommend what to change.
 State any unresolved disagreements and what evidence would resolve them.
 ```
 
+For a general question in a chat project, provide your goals and constraints:
+
+```text
+Use Quorum to compare these study plans against my available time and goals.
+Challenge the assumptions, keep important disagreements visible, and tell me
+what information would change the recommendation.
+```
+
 In Codex, you can also invoke the skill explicitly with `$quorum`.
 
 Look for a recommendation with reasons, material dissent, uncertainty, and a
 receipt stating which reasoning mode actually ran. Verify consequential findings
-against your code and tests before acting on them.
+against relevant evidence and tests before acting on them.
 
 [More usage examples](#use-quorum) · [Reasoning controls](#control-deliberation) ·
 [Installation and updates](#install) · [How it works](#how-it-works)
@@ -41,11 +49,12 @@ against your code and tests before acting on them.
 | A code change has consequential tradeoffs | Review the change and identify concerns supported by the surrounding code. |
 | Two approaches both look plausible | Compare them against your constraints and explain the recommendation. |
 | A migration is difficult to reverse | Examine failure modes, rollout options, and unresolved risks. |
+| A non-coding decision has competing options | Compare them against your goals and constraints, and keep material uncertainty visible. |
 
 Routine lookups and straightforward edits stay direct. Use deliberation when
 another perspective could change the decision.
 
-## What it adds to a review prompt
+## What it adds to a decision prompt
 
 Quorum packages a repeatable process: candidate perspectives, challenge through
 Analyst, Skeptic, and Pragmatist lenses, and a synthesis that preserves material

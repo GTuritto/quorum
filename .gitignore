@@ -13,6 +13,7 @@ coverage/
 .vscode/
 .worktrees/
 dist/
+/docs/listings/agent-directories.md
 
 .quorum-install-*
 *.backup-*

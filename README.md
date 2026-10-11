@@ -7,7 +7,7 @@
 | |_| || |_| || |_| ||  _ < | |_| || |  | |
  \__\_\ \___/  \___/ |_| \_\ \___/ |_|  |_|
 
-                    QUORUM v0.1.82
+                    QUORUM v0.1.83
 ```
 
 **Give your AI assistant a structured second opinion.**
@@ -34,7 +34,7 @@ npx quorum-skill --targets claude
 ```
 
 Run `npx quorum-skill` to detect supported tools, or use `--help` for all options.
-To pin this release, use `npx quorum-skill@0.1.82 --targets codex`.
+To pin this release, use `npx quorum-skill@0.1.83 --targets codex`.
 
 ## Use it
 

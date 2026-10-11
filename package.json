@@ -1,7 +1,7 @@
 {
   "name": "quorum-skill",
-  "version": "0.1.82",
-  "description": "Structured second opinions for AI coding agents: challenge implementation plans, review code, and compare approaches in Codex and Claude Code.",
+  "version": "0.1.83",
+  "description": "Structured second opinions for AI assistants: challenge plans, compare options, review code, and examine consequential decisions.",
   "keywords": [
     "agent-skills",
     "ai-agents",

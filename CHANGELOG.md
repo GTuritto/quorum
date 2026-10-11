@@ -5,6 +5,14 @@ All notable changes to Quorum are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.83] - 2026-10-11
+
+### Changed
+
+- Describe Quorum as a structured second opinion for coding sessions and general
+  chat decisions in the skill metadata, npm package, README, and user guide.
+  The reasoning protocol and installer behavior are unchanged.
+
 ## [0.1.82] - 2026-10-11
 
 ### Added

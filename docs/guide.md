@@ -33,6 +33,11 @@ what information would change the recommendation.
 ```
 
 In Codex, you can also invoke the skill explicitly with `$quorum`.
+Selecting it from the Codex picker prompts for Auto, Direct, Mini, Full, or Super
+before reviewing the task. Auto chooses among Direct, Mini, and Full. A request
+that already names a level proceeds without the chooser. If the task is missing,
+provide it with your choice. Super may need a follow-up for model and effort
+assignments.
 
 Look for a recommendation with reasons, material dissent, uncertainty, and a
 receipt stating which reasoning mode actually ran. Verify consequential findings
@@ -595,8 +600,12 @@ it removes only the link and preserves its target.
 - Newer installations are never downgraded.
 - Foreign files and directories and user-managed symbolic links are never
   replaced.
-- Eligible replacements move the existing installation to a timestamped sibling
-  backup, stage the new payload, and place it atomically.
+- Eligible replacements move the existing installation to a timestamped backup
+  under a sibling `<skills-directory>.quorum-backups` directory, then stage the
+  new payload and place it atomically. Backups stay outside skill discovery.
+- Update also relocates recognized backups left inside the skills directory by
+  older installers, including when the active installation is already current.
+  Foreign folders and symbolic links are left untouched.
 - A legacy Codex copy under `${CODEX_HOME:-~/.codex}/skills/quorum` remains
   read-only during install and update.
 - Every destination is checked again before mutation. A changed destination is

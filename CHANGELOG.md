@@ -5,6 +5,18 @@ All notable changes to Quorum are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Fixed
+
+- Store update backups outside skill discovery directories and move recognized
+  backups left there by older updates, so assistants do not show duplicate skills.
+
+### Added
+
+- Offer a concise, task-scoped reasoning mode choice after selecting Quorum in
+  Codex, with worker, time, and independence indicators for each option.
+
 ## [0.1.83] - 2026-10-11
 
 ### Changed
@@ -220,7 +232,10 @@ Release dates use UTC; npm recorded publication at 22:57:40 UTC.
 - Automated unit and integration coverage for installer behavior and payload
   integrity.
 
-[Unreleased]: https://github.com/GTuritto/quorum/compare/v0.1.80...HEAD
+[Unreleased]: https://github.com/GTuritto/quorum/compare/v0.1.83...HEAD
+[0.1.83]: https://github.com/GTuritto/quorum/compare/v0.1.82...v0.1.83
+[0.1.82]: https://github.com/GTuritto/quorum/compare/v0.1.81...v0.1.82
+[0.1.81]: https://github.com/GTuritto/quorum/compare/v0.1.80...v0.1.81
 [0.1.80]: https://github.com/GTuritto/quorum/compare/v0.1.75...v0.1.80
 [0.1.75]: https://github.com/GTuritto/quorum/compare/v0.1.66...v0.1.75
 [0.1.66]: https://github.com/GTuritto/quorum/compare/v0.1.65...v0.1.66

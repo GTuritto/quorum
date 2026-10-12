@@ -23,6 +23,19 @@ test("entry loads the shared core before execution and the adapter only for Code
   assert.match(entry, /if \(host == Codex\) requireRead\("references\/codex-adapter\.md"\)/);
 });
 
+test("Codex picker requests a mode choice before Quorum work", async () => {
+  const metadata = await read("agents/openai.yaml");
+  const protocol = await read("references/protocol.sudo.md");
+  assert.match(metadata, /default_prompt: "Use \$quorum\. Ask me to choose a reasoning mode/);
+  for (const mode of ["Auto (recommended):", "Direct:", "Mini:", "Full:", "Super:"]) {
+    assert.ok(protocol.includes(mode), mode);
+  }
+  const run = protocol.slice(protocol.indexOf("  run(input) {"));
+  assert.ok(run.indexOf("needsModeChoice(input)") < run.indexOf('requireRead("references/super.sudo.md")'));
+  assert.match(protocol, /skip choice if request already names a level, begins "Direct:", or only requests a memory operation/);
+  assert.match(protocol, /ask for the task in the same question if absent/);
+});
+
 test("adapter binds capabilities without duplicating the portable routing policy", async () => {
   const adapter = await read("references/codex-adapter.md");
   assert.match(adapter, /```sudo/);

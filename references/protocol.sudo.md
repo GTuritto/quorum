@@ -15,6 +15,20 @@ Quorum {
     candidates?; reviewers?; maxWorkers?; conversationDecision?; inference? // Super model/effort profiles
     signals { exploratoryIntent=false; newAlternatives=false }
   }
+  ModeChoice {
+    after explicit Quorum invocation requesting a mode choice, or bare invocation with no task, ask once before task work
+    skip choice if request already names a level, begins "Direct:", or only requests a memory operation
+    ordinary task requests without a level retain auto routing
+    show concise options with these indicators:
+      Auto (recommended): route to Direct, Mini, or Full for the task; never Super
+      Direct: straightforward answer; zero workers; least time and model use
+      Mini: Analyst, Skeptic, Pragmatist in one context; zero workers; no independent review
+      Full: isolated candidate(s) plus fresh reviewer when supported; at least two worker launches; more time and model use; fallback disclosed
+      Super: Full with explicit per-agent model/effort allocation; same worker cap; settings must be validated; no quality guarantee
+    ask for the task in the same question if absent; await the choice and task before dependent work
+    map the answer to input.level for this request only; Auto maps to auto; do not save a mode preference
+    if Super chosen without settings, ask one focused allocation question under Super.Controls; do not silently select maximum effort
+  }
   Controls {
     reset on unrelated request; natural language, not installer flags or saved settings
     inference requires explicit super; auto never selects super; Direct: discards inference without reading Super
@@ -120,6 +134,7 @@ Quorum {
     valid capsule => resume after lastCompletedStage; never repeat receipted completed work
   }
   run(input) {
+    if (needsModeChoice(input)) { showModeChoice(ModeChoice); awaitChoiceAndTaskBeforeDependentWork(input) }
     if (beginsWith(input.request,"Direct:")) {
       input = removePrefixAndIgnoreDeliberationControls(input); input.level=direct; input.exploration=auto
     } else {

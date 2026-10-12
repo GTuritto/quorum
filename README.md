@@ -55,6 +55,8 @@ Challenge the assumptions and explain what could change the recommendation.
 ```
 
 In Codex, you can also invoke it with `$quorum`.
+Selecting Quorum from the Codex picker offers a mode choice in chat before the
+review. A request that already names a mode starts with that mode.
 
 ## Choose the depth
 

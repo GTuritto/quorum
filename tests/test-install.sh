@@ -51,8 +51,12 @@ test ! -e "$project_dry/.agents/skills/quorum"
 grep -F "PLAN      install" "$test_root/dry.out" >/dev/null
 
 printf '\n# locally modified\n' >>"$home_selected/.cursor/skills/quorum/SKILL.md"
+mkdir "$home_selected/.cursor/skills/quorum.backup-20260801T010203Z"
+printf '%s\n' '---' 'name: quorum' '---' 'old backup' >"$home_selected/.cursor/skills/quorum.backup-20260801T010203Z/SKILL.md"
 QUORUM_TEST_HOME="$home_selected" "$node_path" "$test_installer" --update --targets cursor --yes >"$test_root/update.out"
-find "$home_selected/.cursor/skills" -maxdepth 1 -type d -name 'quorum.backup-*' | grep . >/dev/null
+find "$home_selected/.cursor/skills.quorum-backups" -maxdepth 1 -type d -name 'quorum.backup-*' | grep . >/dev/null
+test -f "$home_selected/.cursor/skills.quorum-backups/quorum.backup-20260801T010203Z/SKILL.md"
+test "$(find "$home_selected/.cursor/skills" -maxdepth 1 -type d -name 'quorum.backup-*' | wc -l | tr -d ' ')" = 0
 grep -F "UPDATED" "$test_root/update.out" >/dev/null
 
 fake_bin="$test_root/fake-bin"

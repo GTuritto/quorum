@@ -461,11 +461,45 @@ test("skips identical content and backs up an authorized replacement", async () 
     assert.equal((await installSelected(options))[0].status, "skipped");
 
     const destination = path.join(homeDir, ".cursor", "skills", "quorum");
+    const legacyBackup = `${destination}.backup-20260901T010203Z`;
+    await mkdir(legacyBackup);
+    await writeFile(path.join(legacyBackup, "SKILL.md"), "---\nname: quorum\n---\nold backup\n");
     await writeFile(path.join(destination, "SKILL.md"), "---\nname: quorum\n---\n# changed\n");
     const updated = (await installSelected(options))[0];
     assert.equal(updated.status, "updated");
-    assert.equal(updated.backup, `${destination}.backup-20260906T101112Z`);
+    assert.equal(updated.backup, path.join(homeDir, ".cursor", "skills.quorum-backups", "quorum.backup-20260906T101112Z"));
+    assert.deepEqual(updated.movedBackups, [path.join(homeDir, ".cursor", "skills.quorum-backups", "quorum.backup-20260901T010203Z")]);
     assert.match(await readFile(path.join(updated.backup, "SKILL.md"), "utf8"), /# changed/);
+    assert.match(await readFile(path.join(updated.movedBackups[0], "SKILL.md"), "utf8"), /old backup/);
+    await assert.rejects(readFile(`${destination}.backup-20260906T101112Z/SKILL.md`), /ENOENT/);
+  });
+});
+
+test("update relocates old Quorum backups when the active skill is current", async () => {
+  await withTempDirectory(async (homeDir) => {
+    const options = { sourceRoot, targetIds: ["codex"], scope: "user", homeDir, operation: "update" };
+    const destination = path.join(homeDir, ".agents", "skills", "quorum");
+    await installSelected({ ...options, operation: "install" });
+    const oldBackup = `${destination}.backup-20260801T010203Z`;
+    const foreignBackup = `${destination}.backup-20260802T010203Z`;
+    await mkdir(oldBackup);
+    await mkdir(foreignBackup);
+    await writeFile(path.join(oldBackup, "SKILL.md"), "---\nname: quorum\n---\nold backup\n");
+    await writeFile(path.join(foreignBackup, "SKILL.md"), "---\nname: other\n---\nforeign\n");
+
+    const preview = (await installSelected({ ...options, dryRun: true }))[0];
+    assert.equal(preview.status, "planned");
+    assert.equal(preview.backupCount, 1);
+    assert.match(await readFile(path.join(oldBackup, "SKILL.md"), "utf8"), /old backup/);
+
+    const result = (await installSelected(options))[0];
+    assert.equal(result.status, "skipped");
+    assert.equal(result.reason, "already current");
+    assert.equal(result.movedBackups.length, 1);
+    assert.match(await readFile(path.join(result.movedBackups[0], "SKILL.md"), "utf8"), /old backup/);
+    assert.match(await readFile(path.join(foreignBackup, "SKILL.md"), "utf8"), /foreign/);
+    await assert.rejects(readFile(path.join(oldBackup, "SKILL.md")), /ENOENT/);
+    assert.equal((await installSelected(options))[0].status, "skipped");
   });
 });
 

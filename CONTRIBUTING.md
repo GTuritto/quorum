@@ -55,18 +55,18 @@ published 0.1.x line is still pre-1.0. Its patch increments have included new
 features, so the third number in those releases does not promise fix-only
 changes.
 
-The proposed next stable milestone is 1.0.0. It will define the public contract:
-documented installer commands and update behavior, installed skill paths,
-documented mode selection and fallback rules, execution receipts, and persistent
-project-memory data compatibility. Host-specific capabilities and the quality of
-an individual recommendation are not guaranteed by a package version.
+The 1.0.0 milestone is deferred. Assign each future release number when its
+scope and acceptance criteria are agreed. Before publishing, validate new
+behavior in fresh host sessions as applicable, run the full verification suite
+and distribution build, and align all versioned metadata and installation
+examples. Record known host limitations in the release notes. Until a release
+candidate is prepared, keep the package version at the latest published release.
 
-Before publishing 1.0.0, validate the current unreleased changes in a fresh
-Codex session, complete the remaining host checks recorded in the testing docs,
-run the full verification suite and distribution build, and align all versioned
-metadata and installation examples. Record any known host limitations in the
-release notes. Until that gate passes, keep the package version at the latest
-published release.
+A future 1.0.0 should define the public compatibility contract: documented
+installer commands and update behavior, installed skill paths, documented mode
+selection and fallback rules, execution receipts, and persistent project-memory
+data compatibility. Host-specific capabilities and the quality of an individual
+recommendation are not guaranteed by a package version.
 
 After 1.0.0, use a patch for compatible fixes, a minor for compatible additions
 or deprecations, and a major for incompatible changes to that public contract.

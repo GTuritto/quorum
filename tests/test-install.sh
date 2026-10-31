@@ -15,7 +15,7 @@ node_path=$(command -v node)
 test_installer="$repo_root/tests/run-installer.mjs"
 
 "$repo_root/install.sh" --version >"$test_root/version.out"
-test "$(sed -n '1p' "$test_root/version.out")" = "quorum-skill 0.1.83"
+test "$(sed -n '1p' "$test_root/version.out")" = "quorum-skill 0.1.84"
 
 home_all="$test_root/home-all"
 mkdir -p "$home_all"
@@ -35,7 +35,7 @@ done
 test -f "$home_all/.agents/skills/quorum/agents/openai.yaml"
 test ! -e "$home_all/.claude/skills/quorum/agents/openai.yaml"
 test ! -e "$home_all/.cursor/skills/quorum/installer/install.mjs"
-grep -F "QUORUM v0.1.83" "$test_root/all.out" >/dev/null
+grep -F "QUORUM v0.1.84" "$test_root/all.out" >/dev/null
 
 home_selected="$test_root/home-selected"
 mkdir -p "$home_selected"
@@ -51,8 +51,12 @@ test ! -e "$project_dry/.agents/skills/quorum"
 grep -F "PLAN      install" "$test_root/dry.out" >/dev/null
 
 printf '\n# locally modified\n' >>"$home_selected/.cursor/skills/quorum/SKILL.md"
+mkdir "$home_selected/.cursor/skills/quorum.backup-20260801T010203Z"
+printf '%s\n' '---' 'name: quorum' '---' 'old backup' >"$home_selected/.cursor/skills/quorum.backup-20260801T010203Z/SKILL.md"
 QUORUM_TEST_HOME="$home_selected" "$node_path" "$test_installer" --update --targets cursor --yes >"$test_root/update.out"
-find "$home_selected/.cursor/skills" -maxdepth 1 -type d -name 'quorum.backup-*' | grep . >/dev/null
+find "$home_selected/.cursor/skills.quorum-backups" -maxdepth 1 -type d -name 'quorum.backup-*' | grep . >/dev/null
+test -f "$home_selected/.cursor/skills.quorum-backups/quorum.backup-20260801T010203Z/SKILL.md"
+test "$(find "$home_selected/.cursor/skills" -maxdepth 1 -type d -name 'quorum.backup-*' | wc -l | tr -d ' ')" = 0
 grep -F "UPDATED" "$test_root/update.out" >/dev/null
 
 fake_bin="$test_root/fake-bin"
@@ -89,7 +93,7 @@ test -d "$home_selected/.agents/skills"
 
 if command -v pwsh >/dev/null 2>&1; then
   pwsh -NoProfile -File "$repo_root/install.ps1" --targets codex --scope project --project-root "$project_dry" --dry-run >"$test_root/powershell.out"
-  grep -F "QUORUM v0.1.83" "$test_root/powershell.out" >/dev/null
+  grep -F "QUORUM v0.1.84" "$test_root/powershell.out" >/dev/null
 else
   echo "PowerShell smoke test skipped: pwsh is unavailable"
 fi

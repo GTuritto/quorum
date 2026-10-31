@@ -19,7 +19,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { bannerColorDepth, formatBanner, runSelector } from "./selector.mjs";
-import { inspectQuorumPath } from "./identity.mjs";
+import { inspectQuorumPath, parseQuorumSkillName } from "./identity.mjs";
 import {
   detectTools,
   discoverInstallations,
@@ -289,8 +289,12 @@ function timestamp(now) {
   return now.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
 }
 
-async function availableBackupPath(destination, now) {
-  const base = `${destination}.backup-${timestamp(now)}`;
+function backupDirectory(destination) {
+  return `${path.dirname(destination)}.quorum-backups`;
+}
+
+async function availableBackupName(backupDir, name) {
+  const base = path.join(backupDir, name);
   let candidate = base;
   let suffix = 1;
   while ((await pathKind(candidate)) !== "missing") {
@@ -298,6 +302,52 @@ async function availableBackupPath(destination, now) {
     suffix += 1;
   }
   return candidate;
+}
+
+async function availableBackupPath(destination, now) {
+  return availableBackupName(
+    backupDirectory(destination),
+    `${path.basename(destination)}.backup-${timestamp(now)}`,
+  );
+}
+
+async function legacyBackups(destination) {
+  const skillsDir = path.dirname(destination);
+  const entries = await readdir(skillsDir, { withFileTypes: true });
+  const backups = [];
+  for (const entry of entries) {
+    if (!entry.isDirectory() || !/^quorum\.backup-\d{8}T\d{6}Z(?:-\d+)?$/.test(entry.name)) continue;
+    const backup = path.join(skillsDir, entry.name);
+    const skill = path.join(backup, "SKILL.md");
+    if ((await pathKind(skill)) !== "file") continue;
+    if (parseQuorumSkillName(await readFile(skill, "utf8")) === "quorum") backups.push(backup);
+  }
+  return backups;
+}
+
+async function ensureBackupDirectory(destination) {
+  const backupDir = backupDirectory(destination);
+  const kind = await pathKind(backupDir);
+  if (kind === "missing") await mkdir(backupDir);
+  else if (kind !== "directory") throw new Error(`Invalid backup directory: ${backupDir}`);
+  return backupDir;
+}
+
+async function moveLegacyBackups(destination, backups) {
+  if (backups.length === 0) return [];
+  const backupDir = await ensureBackupDirectory(destination);
+  const moved = [];
+  for (const backup of backups) {
+    const skill = path.join(backup, "SKILL.md");
+    if ((await pathKind(backup)) !== "directory" || (await pathKind(skill)) !== "file" ||
+      parseQuorumSkillName(await readFile(skill, "utf8")) !== "quorum") {
+      throw new Error(`Quorum backup changed before relocation: ${backup}`);
+    }
+    const target = await availableBackupName(backupDir, path.basename(backup));
+    await rename(backup, target);
+    moved.push(target);
+  }
+  return moved;
 }
 
 async function defaultConfirm(destination, { input, output }) {
@@ -415,8 +465,16 @@ export async function installDestination(group, options) {
     sourceVersion: snapshot.sourceVersion,
     installedVersion: snapshot.installedVersion,
   };
+  const shouldMoveBackups = snapshot.kind === "directory" && snapshot.recognized &&
+    (policy.action === "update" || (operation === "update" && policy.reason === "already current"));
+  const oldBackups = shouldMoveBackups ? await legacyBackups(group.destination) : [];
+  if (policy.status === "skipped" && oldBackups.length > 0) {
+    if (dryRun) return { ...resultContext, status: "planned", action: "relocate backups", backupCount: oldBackups.length };
+    const movedBackups = await moveLegacyBackups(group.destination, oldBackups);
+    return { ...resultContext, ...policy, movedBackups };
+  }
   if (policy.status) return { ...resultContext, ...policy };
-  if (dryRun) return { ...resultContext, status: "planned", action: policy.action, reason: policy.reason };
+  if (dryRun) return { ...resultContext, status: "planned", action: policy.action, reason: policy.reason, backupCount: oldBackups.length };
 
   if (policy.requiresConfirmation && !yes) {
     const confirm = options.confirmReplacement ?? ((destination) => defaultConfirm(destination, { input, output }));
@@ -433,6 +491,8 @@ export async function installDestination(group, options) {
   if (snapshotSignature(snapshot) !== snapshotSignature(confirmedSnapshot)) {
     return { ...resultContext, status: "refused", reason: "destination changed" };
   }
+
+  const movedBackups = await moveLegacyBackups(group.destination, oldBackups);
 
   const parent = path.dirname(group.destination);
   await mkdir(parent, { recursive: true });
@@ -451,6 +511,7 @@ export async function installDestination(group, options) {
     }
     if (policy.action === "update") {
       backup = await availableBackupPath(group.destination, now());
+      await ensureBackupDirectory(group.destination);
       await rename(group.destination, backup);
     }
     try {
@@ -465,6 +526,7 @@ export async function installDestination(group, options) {
       ...resultContext,
       status: policy.action === "install" ? "installed" : "updated",
       backup,
+      movedBackups,
     };
   } catch (error) {
     if ((await pathKind(stage)) !== "missing") await rm(stage, { recursive: true, force: true });
@@ -712,14 +774,16 @@ export async function resolveRunPlan(options, {
 
 function formatResult(result) {
   const consumers = result.labels.join(", ");
-  if (result.status === "planned") return `PLAN      ${result.action} ${result.destination} (${consumers})`;
+  const backupPlan = result.backupCount ? `; move ${result.backupCount} old backup(s)` : "";
+  const backupMoves = result.movedBackups?.length ? `\n           Moved old backups: ${result.movedBackups.length}` : "";
+  if (result.status === "planned") return `PLAN      ${result.action} ${result.destination} (${consumers}${backupPlan})`;
   if (result.status === "installed") return `INSTALLED ${result.destination} (${consumers})`;
   if (result.status === "removed") return `REMOVED   ${result.destination} (${consumers})`;
   if (result.status === "updated") {
     const versions = `installed ${result.installedVersion ?? "unknown"}, source ${result.sourceVersion}`;
-    return `UPDATED   ${result.destination} (${consumers}; ${versions})\n           Backup: ${result.backup}`;
+    return `UPDATED   ${result.destination} (${consumers}; ${versions})\n           Backup: ${result.backup}${backupMoves}`;
   }
-  if (result.status === "skipped") return `SKIPPED   ${result.destination} (${consumers}; ${result.reason})`;
+  if (result.status === "skipped") return `SKIPPED   ${result.destination} (${consumers}; ${result.reason})${backupMoves}`;
   if (result.status === "refused") return `REFUSED   ${result.destination} (${consumers}): ${result.reason}`;
   return `FAILED    ${result.destination} (${consumers}): ${result.error}`;
 }

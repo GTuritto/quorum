@@ -48,6 +48,31 @@ git diff --check
 dist` verifies the exact npm packlist before producing the compact release
 archives and `SHA256SUMS` in `dist/`.
 
+## Versioning
+
+Quorum uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The
+published 0.1.x line is still pre-1.0. Its patch increments have included new
+features, so the third number in those releases does not promise fix-only
+changes.
+
+The proposed next stable milestone is 1.0.0. It will define the public contract:
+documented installer commands and update behavior, installed skill paths,
+documented mode selection and fallback rules, execution receipts, and persistent
+project-memory data compatibility. Host-specific capabilities and the quality of
+an individual recommendation are not guaranteed by a package version.
+
+Before publishing 1.0.0, validate the current unreleased changes in a fresh
+Codex session, complete the remaining host checks recorded in the testing docs,
+run the full verification suite and distribution build, and align all versioned
+metadata and installation examples. Record any known host limitations in the
+release notes. Until that gate passes, keep the package version at the latest
+published release.
+
+After 1.0.0, use a patch for compatible fixes, a minor for compatible additions
+or deprecations, and a major for incompatible changes to that public contract.
+Reset the less significant components to zero when incrementing a more
+significant component.
+
 ## Logo maintenance
 
 The terminal banner in `installer/selector.mjs` owns the ASCII lettering and
@@ -58,7 +83,7 @@ selector row positions, and version-only output.
 ## Publishing a release
 
 Merge the versioned changes and publishing workflow into `main` first. Then
-push a stable version tag, for example `v0.1.60`, on the intended release
+push a stable version tag, for example `v1.0.0`, on the intended release
 commit. The `Publish npm package` workflow runs automatically on `v*` tag
 pushes, checks the exact X.Y.Z version against `package.json`, and verifies
 that the tagged commit is an ancestor of `origin/main`. Prerelease tags are

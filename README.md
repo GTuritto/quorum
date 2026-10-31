@@ -7,7 +7,7 @@
 | |_| || |_| || |_| ||  _ < | |_| || |  | |
  \__\_\ \___/  \___/ |_| \_\ \___/ |_|  |_|
 
-                    QUORUM v0.1.83
+                    QUORUM v0.1.84
 ```
 
 **Give your AI assistant a structured second opinion.**
@@ -34,7 +34,7 @@ npx quorum-skill --targets claude
 ```
 
 Run `npx quorum-skill` to detect supported tools, or use `--help` for all options.
-To pin this release, use `npx quorum-skill@0.1.83 --targets codex`.
+To pin this release, use `npx quorum-skill@0.1.84 --targets codex`.
 
 ## Use it
 
@@ -55,6 +55,8 @@ Challenge the assumptions and explain what could change the recommendation.
 ```
 
 In Codex, you can also invoke it with `$quorum`.
+Selecting Quorum from the Codex picker offers a mode choice in chat before the
+review. A request that already names a mode starts with that mode.
 
 ## Choose the depth
 

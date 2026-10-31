@@ -47,6 +47,19 @@ test("classifies eligible updates, current content, and missing destinations", (
   );
 });
 
+test("updates an installed 0.1 release to 1.0.0", () => {
+  assert.deepEqual(
+    classifyDestination({
+      sourceVersion: "1.0.0",
+      installedVersion: "0.1.83",
+      kind: "directory",
+      recognized: true,
+      contentMatches: false,
+    }, "update"),
+    { action: "update", requiresConfirmation: true, reason: "older version" },
+  );
+});
+
 test("refuses downgrades, foreign content, and update symlinks", () => {
   const base = { sourceVersion: "0.1.59", kind: "directory", recognized: true };
   assert.deepEqual(

@@ -1,100 +1,50 @@
 # Publishing Quorum
 
-Only maintainers publish Quorum. Build and test every release from a clean
-`main` branch.
+Only maintainers publish Quorum. Publish from a clean commit on `main` after the
+release candidate has passed its verification and the versioned changes have
+merged. The current workflow uses a stable `vX.Y.Z` tag pushed to that commit;
+a merge alone does not publish.
 
-## First npm publication
+## First publication and trusted publisher
 
-Version `0.1.58` establishes ownership of the unscoped `quorum-skill` package.
-It is published once from an authenticated maintainer account after the local
-release gate passes. This first release has no trusted-publishing provenance;
-provenance cannot be added retroactively.
+Version `0.1.58` established ownership of the unscoped `quorum-skill` package.
+Later releases use npm trusted publishing through `.github/workflows/publish.yml`
+for `GTuritto/quorum`, with GitHub OIDC and no stored npm publish token. Keep
+the npm trusted-publisher binding and account 2FA enabled.
 
-After `0.1.58` exists, configure GitHub Actions workflow `publish.yml` as the
-trusted publisher for `GTuritto/quorum`. The npm account must have 2FA enabled.
-Use npm `11.15.0` or later:
+## Release gate
 
-```sh
-npx -y npm@^11.15.0 trust github quorum-skill \
-  --file publish.yml \
-  --repo GTuritto/quorum \
-  --allow-publish \
-  --yes
-npx -y npm@^11.15.0 trust list quorum-skill --json
-```
+1. Confirm the release commit is on `main`, the working tree is clean, and
+   `VERSION`, `package.json`, `SKILL.md`, README, guide, changelog, and version
+   tests agree on the release number.
+2. Run `npm test`, `TZ=UTC npm run dist`, and `git diff --check`. Check the
+   generated `dist/SHA256SUMS` with `shasum -a 256 -c` from `dist/`.
+3. Confirm the exact version does not already exist on npm with
+   `npm view quorum-skill@X.Y.Z version`.
+4. Push an annotated `vX.Y.Z` tag on the merged release commit. The tag push
+   starts the `Publish npm package` workflow. Its release check rejects a tag
+   whose version differs from `package.json` or whose commit is not on
+   `origin/main`.
+5. Wait for the workflow and verify the npm version, tarball executable, and
+   provenance. The workflow also uploads TGZ, ZIP, and checksums as temporary
+   artifacts. It does not create a GitHub release.
 
-## Subsequent npm releases
+The workflow can also be dispatched manually from `main` with the exact
+version input. Use that only when a tag-triggered publish did not occur and
+the version is still absent from npm. npm versions are immutable, so do not
+rerun a successful publish for the same version.
 
-Version 0.1.59 is the first trusted publication. Start from a clean, verified
-`main` branch and confirm that npm still binds direct publishing to this
-repository and workflow:
+## Verify a published release
 
-```sh
-git fetch origin
-git rev-list --left-right --count origin/main...main
-gh auth status
-npx -y npm@^11.15.0 trust list quorum-skill --json
-npm view quorum-skill@0.1.59 version
-```
-
-The final `npm view` command must report that 0.1.59 is absent before release.
-Run the local gate, push `main`, and dispatch the trusted workflow:
-
-```sh
-npm test
-TZ=UTC npm run dist
-git diff --check
-git push origin main
-gh workflow run publish.yml --ref main -f version=0.1.59
-quorum_run_id=$(gh run list --workflow publish.yml --branch main --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId')
-gh run watch "$quorum_run_id" --exit-status
-```
-
-Use UTC for the local distribution build. The system ZIP format records local
-wall-clock timestamps, while npm normalizes packaged file times. Matching the
-GitHub-hosted runner's UTC timezone makes the local and workflow ZIP archives
-byte-for-byte comparable.
-
-Download the workflow artifact and compare it with the local build:
+Run the executable outside the source checkout, where npm cannot select the
+local package in place of the registry package:
 
 ```sh
-quorum_artifact_dir=$(mktemp -d "${TMPDIR:-/tmp}/quorum-0.1.59-artifact.XXXXXX")
-gh run download "$quorum_run_id" --name quorum-skill-0.1.59 --dir "$quorum_artifact_dir"
-(cd "$quorum_artifact_dir" && shasum -a 256 -c SHA256SUMS)
-cmp dist/quorum-skill-0.1.59.tgz "$quorum_artifact_dir/quorum-skill-0.1.59.tgz"
-cmp dist/quorum-skill-0.1.59.zip "$quorum_artifact_dir/quorum-skill-0.1.59.zip"
+npm view quorum-skill@X.Y.Z version dist.integrity dist.attestations --json
+quorum_smoke_dir=$(mktemp -d "${TMPDIR:-/tmp}/quorum-release-smoke.XXXXXX")
+(cd "$quorum_smoke_dir" && npx -y quorum-skill@X.Y.Z --version)
 ```
 
-Verify the registry version, executable, integrity, and provenance metadata:
-
-```sh
-npm view quorum-skill@0.1.59 version dist.integrity dist.tarball dist.attestations --json
-quorum_smoke_dir=$(mktemp -d "${TMPDIR:-/tmp}/quorum-0.1.59-smoke.XXXXXX")
-(cd "$quorum_smoke_dir" && npx -y quorum-skill@0.1.59 --version)
-```
-
-Run the `npx` smoke test outside the source checkout. Inside a matching local
-package, npm may prefer the project without creating an executable link.
-
-Create the annotated tag only after npm verification. Attach the workflow's
-exact three files to a draft release, verify them, then publish the release.
-
-```sh
-git tag -a v0.1.59 -m "Quorum 0.1.59"
-git push origin v0.1.59
-quorum_release_notes=$(mktemp "${TMPDIR:-/tmp}/quorum-0.1.59-notes.XXXXXX")
-sed -n '/^## \[0.1.59\]/,/^## \[/p' CHANGELOG.md | sed '$d' > "$quorum_release_notes"
-gh release create v0.1.59 --draft --title "Quorum 0.1.59" \
-  --notes-file "$quorum_release_notes" \
-  "$quorum_artifact_dir/quorum-skill-0.1.59.tgz" \
-  "$quorum_artifact_dir/quorum-skill-0.1.59.zip" \
-  "$quorum_artifact_dir/SHA256SUMS"
-quorum_release_verify_dir=$(mktemp -d "${TMPDIR:-/tmp}/quorum-0.1.59-release.XXXXXX")
-gh release download v0.1.59 --dir "$quorum_release_verify_dir"
-(cd "$quorum_release_verify_dir" && shasum -a 256 -c SHA256SUMS)
-gh release edit v0.1.59 --draft=false
-```
-
-Trusted publishing uses GitHub OIDC and stores no npm publish token. npm adds
-provenance and publish attestations automatically for the public package from
-this public repository.
+The versioned npm package is the published artifact. A GitHub release and its
+asset attachments are separate optional work and must use the workflow's
+verified archives if created.

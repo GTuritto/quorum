@@ -271,7 +271,7 @@ and fresh-host observations, including limits on verifying effective settings.
 
 ### Project decision memory
 
-Quorum 0.1.83 supports explicit project memory and opt-in automatic capture.
+Quorum 0.1.84 supports explicit project memory and opt-in automatic capture.
 Automatic capture is **off by default**. Ask your assistant:
 
 ```text
@@ -403,14 +403,14 @@ npx quorum-skill
 Pin the exact release when reproducibility matters:
 
 ```sh
-npx quorum-skill@0.1.83
+npx quorum-skill@0.1.84
 ```
 
 `npx` may ask before downloading an uncached package. Put `-y` before the
 package name to suppress that npm prompt:
 
 ```sh
-npx -y quorum-skill@0.1.83 --all --dry-run
+npx -y quorum-skill@0.1.84 --all --dry-run
 ```
 
 This does not suppress Quorum's replacement confirmation. Pass Quorum's
@@ -421,13 +421,13 @@ This does not suppress Quorum's replacement confirmation. Pass Quorum's
 Download the tarball from npm into an empty working directory:
 
 ```sh
-npm pack quorum-skill@0.1.83
+npm pack quorum-skill@0.1.84
 ```
 
 On macOS or Linux:
 
 ```sh
-tar -xzf quorum-skill-0.1.83.tgz &&
+tar -xzf quorum-skill-0.1.84.tgz &&
 cd package &&
 ./install.sh
 ```
@@ -436,7 +436,7 @@ On Windows PowerShell with `tar` available, run each command after the previous
 one succeeds:
 
 ```powershell
-tar -xzf quorum-skill-0.1.83.tgz
+tar -xzf quorum-skill-0.1.84.tgz
 Set-Location .\package
 .\install.ps1
 ```
@@ -546,10 +546,10 @@ npx quorum-skill --update
 
 `--upgrade` is an exact alias. The installer performs no network request and
 does not choose a release. npm selects the package first, so this command
-applies version 0.1.83 explicitly:
+applies version 0.1.84 explicitly:
 
 ```sh
-npx quorum-skill@0.1.83 --update
+npx quorum-skill@0.1.84 --update
 ```
 
 An explicit update target stays absent when it is not installed:

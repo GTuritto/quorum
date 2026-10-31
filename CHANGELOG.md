@@ -7,6 +7,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## Unreleased
 
+## [0.1.84] - 2026-10-31
+
 ### Fixed
 
 - Store update backups outside skill discovery directories and move recognized
@@ -232,7 +234,8 @@ Release dates use UTC; npm recorded publication at 22:57:40 UTC.
 - Automated unit and integration coverage for installer behavior and payload
   integrity.
 
-[Unreleased]: https://github.com/GTuritto/quorum/compare/v0.1.83...HEAD
+[Unreleased]: https://github.com/GTuritto/quorum/compare/v0.1.84...HEAD
+[0.1.84]: https://github.com/GTuritto/quorum/compare/v0.1.83...v0.1.84
 [0.1.83]: https://github.com/GTuritto/quorum/compare/v0.1.82...v0.1.83
 [0.1.82]: https://github.com/GTuritto/quorum/compare/v0.1.81...v0.1.82
 [0.1.81]: https://github.com/GTuritto/quorum/compare/v0.1.80...v0.1.81

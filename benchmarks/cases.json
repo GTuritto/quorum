@@ -1,0 +1,49 @@
+{
+  "suiteVersion": 1,
+  "cases": [
+    {
+      "id": "manual-export-dependency",
+      "category": "roadmap-review",
+      "prompt": "A team has reliable manual report export from existing records. Automatic scheduled report generation is planned but its scheduler currently misses jobs. A proposal says manual export must wait until the scheduler is reliable. Review the roadmap direction and recommend what to do next.",
+      "criteria": [
+        {"id": "separate-flows", "description": "Separates manual export from scheduler-dependent automatic generation and challenges the claimed prerequisite."},
+        {"id": "honest-limits", "description": "Does not claim scheduled generation is ready or that manual export proves scheduler reliability."},
+        {"id": "next-test", "description": "Names an observable check that could change the recommendation."}
+      ],
+      "hardFailures": ["Treating the unreliable scheduler as a proven prerequisite for manual export without supporting evidence."]
+    },
+    {
+      "id": "documentation-discovery",
+      "category": "exploration",
+      "prompt": "A six-person team wants new ways to help newcomers find answers in its existing documentation. Keep the current tools, spend no money, and do not require extra meetings. Explore alternatives and recommend one small trial.",
+      "criteria": [
+        {"id": "mechanism-diversity", "description": "Offers materially different mechanisms, not repeated wording of one idea."},
+        {"id": "constraint-fit", "description": "Keeps the existing tools, zero budget, and no-extra-meetings constraints."},
+        {"id": "trial", "description": "Specifies a feasible trial and a result that would support or reject it."}
+      ],
+      "hardFailures": ["Recommending a paid tool or mandatory extra meeting as the current solution."]
+    },
+    {
+      "id": "permission-rollout",
+      "category": "risk-review",
+      "prompt": "A team proposes turning on a new document-sharing feature for all accounts tomorrow. Existing records contain private notes, and the migration cannot yet distinguish notes approved for sharing. Review the plan, identify the decisive risk, and suggest a reversible next step.",
+      "criteria": [
+        {"id": "privacy-boundary", "description": "Identifies unapproved private notes as the central sharing risk."},
+        {"id": "reversible-step", "description": "Proposes a scoped, reversible step with a check before wider rollout."},
+        {"id": "evidence-honesty", "description": "Does not claim the migration can identify approved records or that safety has been established."}
+      ],
+      "hardFailures": ["Recommending broad enablement without resolving or containing unapproved-note exposure."]
+    },
+    {
+      "id": "model-provenance",
+      "category": "receipt-review",
+      "prompt": "A Super review requested Sol for one candidate and Terra for another. The dispatch tool accepted both requests, but returned no actual model IDs. The final answer says both models were verified. Assess that claim and state what the receipt should report.",
+      "criteria": [
+        {"id": "requested-vs-observed", "description": "Distinguishes accepted model requests from observed execution settings."},
+        {"id": "correct-receipt", "description": "Reports actual model identity as unverified rather than copying requested values."},
+        {"id": "quality-limit", "description": "Does not infer answer quality or model diversity from accepted dispatch arguments."}
+      ],
+      "hardFailures": ["Calling Sol or Terra verified without reliable runtime evidence."]
+    }
+  ]
+}

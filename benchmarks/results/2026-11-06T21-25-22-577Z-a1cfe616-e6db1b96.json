@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-11-06T21:25:22.577Z",
+  "suiteVersion": 1,
+  "source": {
+    "gitHead": "a1cfe616c83aec71614679a31ad07a4b242b6310",
+    "dirty": true,
+    "statusAtStart": [
+      "M CHANGELOG.md",
+      " M CONTRIBUTING.md",
+      " M README.md",
+      " M SKILL.md",
+      " M VERSION",
+      " M docs/guide.md",
+      " M docs/testing/0.1.84-release.md",
+      " M package.json",
+      " M tests/distribution.test.mjs",
+      " M tests/install.test.mjs",
+      " M tests/test-install.sh",
+      " M tests/version.test.mjs",
+      "?? benchmarks/",
+      "?? docs/testing/0.1.86-release.md",
+      "?? docs/testing/quality-baseline-2026-11-06.md",
+      "?? docs/testing/quality.md",
+      "?? scripts/benchmark.mjs",
+      "?? scripts/quality-record.mjs",
+      "?? tests/benchmark.test.mjs",
+      "?? tests/quality-record.test.mjs"
+    ],
+    "nodeVersion": "v25.9.0"
+  },
+  "qa": {
+    "passed": false,
+    "tests": {
+      "total": 200,
+      "passed": 198,
+      "failed": 2,
+      "installerIntegrationPassed": false
+    },
+    "checks": [
+      {
+        "command": "npm test",
+        "passed": false,
+        "exitCode": 1,
+        "durationMs": 9375,
+        "outputSha256": "1f0f3f2b85ead115e1087f7926cc8c169a9888930f8bde2367e65f030cc8e34e"
+      },
+      {
+        "command": "npm run benchmark:check",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 717,
+        "outputSha256": "adf632b8734fa9a7f78d572c1f8fc92011bccb4c85546a05b7098a6cf986db5f"
+      },
+      {
+        "command": "npm run dist",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 660,
+        "outputSha256": "3126e6635b637163e50c1b308381787278b7389f484b51322f41cec8ae798cf9"
+      },
+      {
+        "command": "git diff --check",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 17,
+        "outputSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ],
+    "archives": {
+      "passed": true,
+      "files": [
+        {
+          "name": "quorum-skill-0.1.86.tgz",
+          "passed": true
+        },
+        {
+          "name": "quorum-skill-0.1.86.zip",
+          "passed": true
+        }
+      ]
+    },
+    "baseline": "2026-11-06T20-48-57-363Z-a1cfe616-5ba1780c.json",
+    "changeInPassedTests": -2
+  },
+  "benchmark": null
+}

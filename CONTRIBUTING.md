@@ -27,6 +27,14 @@ npm test
 Quorum currently has no third-party package dependencies, so no dependency
 installation step is required.
 
+See [testing and quality](docs/testing/quality.md) for the evidence levels and
+release gates. `npm run benchmark:check` validates the public benchmark corpus;
+it does not run an AI host or award a quality score.
+After an update, run `npm run quality:record` to store an append-only QA
+snapshot. Add `-- --benchmark /path/to/observed-runs.json` when scored host
+runs exist. Review the new snapshot and its prior-baseline comparison before
+including it in a change; do not replace old results.
+
 ## Making a change
 
 1. Fork the repository and create a focused branch.

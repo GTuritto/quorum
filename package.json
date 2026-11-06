@@ -1,6 +1,6 @@
 {
   "name": "quorum-skill",
-  "version": "0.1.84",
+  "version": "0.1.86",
   "description": "Structured second opinions for AI assistants: challenge plans, compare options, review code, and examine consequential decisions.",
   "keywords": [
     "agent-skills",
@@ -65,6 +65,8 @@
   },
   "scripts": {
     "dist": "node scripts/build-distribution.mjs",
+    "benchmark:check": "node scripts/benchmark.mjs",
+    "quality:record": "node scripts/quality-record.mjs",
     "test": "node --test tests/*.test.mjs && sh tests/test-install.sh",
     "test:unit": "node --test tests/*.test.mjs",
     "test:integration": "sh tests/test-install.sh"

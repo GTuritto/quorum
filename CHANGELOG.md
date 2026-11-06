@@ -7,6 +7,18 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## Unreleased
 
+## [0.1.86] - Unreleased
+
+### Added
+
+- Add a four-case synthetic decision-quality corpus, a manifest validator, and an
+  offline scorer for human-assessed host runs. No model runs or quality gain are
+  claimed by the corpus alone.
+- Add append-only QA snapshots and compatible benchmark comparisons, with
+  explicit missing-baseline and hard-failure reporting.
+- Document evidence levels and release gates for source checks, host behavior,
+  and comparative decision quality.
+
 ## [0.1.84] - 2026-10-31
 
 ### Fixed
@@ -234,7 +246,8 @@ Release dates use UTC; npm recorded publication at 22:57:40 UTC.
 - Automated unit and integration coverage for installer behavior and payload
   integrity.
 
-[Unreleased]: https://github.com/GTuritto/quorum/compare/v0.1.84...HEAD
+[Unreleased]: https://github.com/GTuritto/quorum/compare/v0.1.86...HEAD
+[0.1.86]: https://github.com/GTuritto/quorum/compare/v0.1.84...v0.1.86
 [0.1.84]: https://github.com/GTuritto/quorum/compare/v0.1.83...v0.1.84
 [0.1.83]: https://github.com/GTuritto/quorum/compare/v0.1.82...v0.1.83
 [0.1.82]: https://github.com/GTuritto/quorum/compare/v0.1.81...v0.1.82

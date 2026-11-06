@@ -7,7 +7,7 @@
 | |_| || |_| || |_| ||  _ < | |_| || |  | |
  \__\_\ \___/  \___/ |_| \_\ \___/ |_|  |_|
 
-                    QUORUM v0.1.84
+                    QUORUM v0.1.86
 ```
 
 **Give your AI assistant a structured second opinion.**
@@ -34,7 +34,7 @@ npx quorum-skill --targets claude
 ```
 
 Run `npx quorum-skill` to detect supported tools, or use `--help` for all options.
-To pin this release, use `npx quorum-skill@0.1.84 --targets codex`.
+After publication, pin this version with `npx quorum-skill@0.1.86 --targets codex`.
 
 ## Use it
 
@@ -94,5 +94,6 @@ npx quorum-skill --update
 ## Learn more
 
 - [User guide](https://github.com/GTuritto/quorum/blob/main/docs/guide.md): advanced controls, project memory, installation options, and uninstall.
+- [Testing and quality](https://github.com/GTuritto/quorum/blob/main/docs/testing/quality.md): test levels, host evidence, and decision-quality benchmarks.
 - [Why Quorum exists](https://github.com/GTuritto/quorum/blob/main/docs/guide.md#why-quorum-exists)
 - [Contributing](https://github.com/GTuritto/quorum/blob/main/CONTRIBUTING.md) · [Changelog](https://github.com/GTuritto/quorum/blob/main/CHANGELOG.md) · [MIT License](LICENSE)

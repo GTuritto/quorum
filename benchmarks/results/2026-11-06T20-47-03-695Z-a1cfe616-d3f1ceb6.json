@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-11-06T20:47:03.695Z",
+  "suiteVersion": 1,
+  "source": {
+    "gitHead": "a1cfe616c83aec71614679a31ad07a4b242b6310",
+    "dirty": true,
+    "statusAtStart": [
+      "M CONTRIBUTING.md",
+      " M README.md",
+      " M docs/testing/0.1.84-release.md",
+      " M package.json",
+      "?? benchmarks/",
+      "?? docs/testing/quality-baseline-2026-11-06.md",
+      "?? docs/testing/quality.md",
+      "?? scripts/benchmark.mjs",
+      "?? scripts/quality-record.mjs",
+      "?? tests/benchmark.test.mjs",
+      "?? tests/quality-record.test.mjs"
+    ],
+    "nodeVersion": "v26.7.0"
+  },
+  "qa": {
+    "passed": true,
+    "tests": {
+      "total": 199,
+      "passed": 199,
+      "failed": 0,
+      "installerIntegrationPassed": true
+    },
+    "checks": [
+      {
+        "command": "npm test",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 7803,
+        "outputSha256": "1003f86db62f74d48af8b94d8d16105d1e9fe2269f51997c045993c69aacac9c"
+      },
+      {
+        "command": "npm run benchmark:check",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 139,
+        "outputSha256": "448b5ff275a19223f76c528d2f7310e81199a638a3a0466eb4c77537602598f9"
+      },
+      {
+        "command": "npm run dist",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 471,
+        "outputSha256": "510a740640f7533342d0752ae8032d179de90d7957597bee2e251d587b07d121"
+      },
+      {
+        "command": "git diff --check",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 22,
+        "outputSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ],
+    "archives": {
+      "passed": true,
+      "files": [
+        {
+          "name": "quorum-skill-0.1.84.tgz",
+          "passed": true
+        },
+        {
+          "name": "quorum-skill-0.1.84.zip",
+          "passed": true
+        }
+      ]
+    },
+    "baseline": "2026-11-06T20-45-22-224Z-a1cfe616-f07715a5.json",
+    "changeInPassedTests": 0
+  },
+  "benchmark": null
+}

@@ -34,7 +34,7 @@ npx quorum-skill --targets claude
 ```
 
 Run `npx quorum-skill` to detect supported tools, or use `--help` for all options.
-After publication, pin this version with `npx quorum-skill@0.2.0 --targets codex`.
+Pin this version with `npx quorum-skill@0.2.0 --targets codex`.
 
 ## Use it
 

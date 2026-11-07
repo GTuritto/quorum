@@ -117,7 +117,7 @@ test("capture is opt-in, final-only, and separate from explicit operations and r
   const memory = await read("references/memory.sudo.md");
   assert.match(memory, /persist only with explicit user intent; default off/);
   assert.match(memory, /settings only, no records/);
-  assert.match(memory, /no automatic record retrieval\/reuse\/global memory\/learning/);
+  assert.match(memory, /no automatic record retrieval\/reuse\/global capture\/learning/);
   assert.match(memory, /unresolved dissent in uncertainty/);
   assert.match(memory, /unsafe\/oversized summary => skip capture/);
   assert.match(memory, /no automatic recapture in forget request/);

@@ -5,6 +5,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { globalMemoryOperation } from "./global-memory.mjs";
 
 const OWNER = "quorum";
 const MAX_CONFIG = 4096;
@@ -41,7 +42,8 @@ function validateRecord(record, stored = false) {
   if (Buffer.byteLength(JSON.stringify(record)) > MAX_RECORD) throw new Error("Record exceeds 32 KiB");
 }
 function validateInput(input) {
-  keys(input, ["action", "projectRoot", "record", "id", "query", "limit", "all"]);
+  keys(input, ["scope", "action", "projectRoot", "record", "id", "query", "limit", "all"]);
+  if (input.scope !== undefined && input.scope !== "project") throw new Error("Invalid project memory scope");
   if (typeof input.projectRoot !== "string" || !path.isAbsolute(input.projectRoot)) throw new Error("Explicit absolute project root required");
   const { action, id, query, record, all, limit } = input;
   if (!["save", "capture", "read", "forget", "on", "off", "status"].includes(action)) throw new Error("Expected save, capture, read, forget, on, off, or status");
@@ -63,7 +65,11 @@ function validateInput(input) {
 
 // Coordinates cooperating writers. Rechecks reject observed path changes;
 // this is not a transaction against a malicious process replacing directories.
-export async function memoryOperation(input, { fs = realFs } = {}) {
+export async function memoryOperation(input, { fs = realFs, homeDir } = {}) {
+  if (input?.scope === "global") return globalMemoryOperation(input, {
+    fs, homeDir, validateRecord,
+    projectOperation: (projectInput) => memoryOperation(projectInput, { fs }),
+  });
   validateInput(input);
   const stat = async (p) => {
     try { return await fs.lstat(p); } catch (error) { if (error.code === "ENOENT") return null; throw error; }
@@ -286,15 +292,15 @@ export async function memoryOperation(input, { fs = realFs } = {}) {
 async function cli() {
   const [action, ...args] = process.argv.slice(2);
   if (action === "--help") {
-    console.log("Quorum memory: on|off|status --project-root ABS | save|capture --project-root ABS < record.json | read --project-root ABS (--id UUID | --query TEXT) [--limit 1..20] | forget --project-root ABS (--id UUID | --all)");
+    console.log("Quorum project memory: on|off|status --project-root ABS | save|capture --project-root ABS < record.json | read --project-root ABS (--id UUID | --query TEXT) [--limit 1..20] | forget --project-root ABS (--id UUID | --all)\nGlobal memory: --scope global on|off|status | share --project-root ABS --source-id UUID --authorized [--allow-project-off] | preview|read --project-root ABS --id UUID --authorized | admit --project-root ABS --id UUID --authorized --preview-digest SHA256 | revoke --project-root ABS --id UUID | links --project-root ABS [--source-id UUID] | forget (--id UUID | --all)");
     return;
   }
   const input = { action };
-  const names = { "--project-root": "projectRoot", "--id": "id", "--query": "query", "--limit": "limit", "--all": "all" };
+  const names = { "--scope": "scope", "--project-root": "projectRoot", "--source-id": "sourceId", "--id": "id", "--query": "query", "--limit": "limit", "--all": "all", "--authorized": "authorized", "--allow-project-off": "allowProjectOff", "--preview-digest": "previewDigest" };
   for (let i = 0; i < args.length; i++) {
     const name = names[args[i]];
     if (!name || Object.hasOwn(input, name)) throw new Error("Unknown or duplicate option");
-    if (name === "all") input[name] = true;
+    if (["all", "authorized", "allowProjectOff"].includes(name)) input[name] = true;
     else {
       if (args[i + 1] === undefined) throw new Error("Missing option value");
       input[name] = name === "limit" ? Number(args[++i]) : args[++i];

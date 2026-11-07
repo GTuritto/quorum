@@ -34,7 +34,7 @@ test("builds matching tgz, zip, and SHA256SUMS", async () => {
     const outputDirectory = path.join(temporaryRoot, "dist");
     const result = await buildDistribution({ root, outputDirectory });
 
-    assert.equal(result.version, "0.1.86");
+    assert.equal(result.version, "0.2.0");
     assert.deepEqual(result.packageFiles, EXPECTED_PACKAGE_FILES);
 
     const tarEntries = execFileSync("tar", ["-tzf", result.tgzPath], {
@@ -108,7 +108,7 @@ test("runs version and maintenance dry-runs from the packed npm executable", asy
       "quorum-skill",
       "--version",
     ], { cwd: workDirectory, env: environment });
-    assert.equal(version, "quorum-skill 0.1.86\n");
+    assert.equal(version, "quorum-skill 0.2.0\n");
 
     const dryRun = runNpm([
       "exec",
@@ -191,5 +191,18 @@ test("packed installer delivers working project controls without capturing durin
     assert.equal(invoke("read", ["--query", "store"]).matched, 1);
     assert.equal(invoke("forget", ["--all"]).forgotten, 1);
     assert.equal(invoke("status").enabled, false);
+    const destination = path.join(temporaryRoot, "destination");
+    await mkdir(destination);
+    const global = (action, args = []) => JSON.parse(execFileSync(process.execPath,
+      [helper, action, "--scope", "global", ...args], { encoding: "utf8", env: { ...process.env, HOME: temporaryRoot } }));
+    const source = invoke("save", [], record);
+    assert.equal(global("status").enabled, false);
+    global("on");
+    const shared = global("share", ["--project-root", project, "--source-id", source.id, "--authorized", "--allow-project-off"]);
+    const preview = global("preview", ["--project-root", destination, "--id", shared.id, "--authorized"]);
+    const admitted = global("admit", ["--project-root", destination, "--id", shared.id, "--authorized", "--preview-digest", preview.digest]);
+    assert.equal(global("read", ["--project-root", destination, "--id", shared.id, "--authorized"]).admissionId, admitted.admissionId);
+    assert.equal(global("forget", ["--id", shared.id]).forgotten, 1);
+    assert.equal(invoke("read", ["--id", source.id]).matched, 1);
   });
 });

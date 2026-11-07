@@ -1,6 +1,6 @@
 {
   "name": "quorum-skill",
-  "version": "0.1.86",
+  "version": "0.2.0",
   "description": "Structured second opinions for AI assistants: challenge plans, compare options, review code, and examine consequential decisions.",
   "keywords": [
     "agent-skills",
@@ -52,9 +52,10 @@
     "references/codex-adapter.md",
     "references/deliberation.sudo.md",
     "references/full.sudo.md",
+    "references/global-memory.mjs",
+    "references/memory.mjs",
     "references/memory.sudo.md",
     "references/protocol.sudo.md",
-    "references/memory.mjs",
     "references/super.sudo.md"
   ],
   "publishConfig": {

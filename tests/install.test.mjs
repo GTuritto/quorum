@@ -275,7 +275,7 @@ test("install and update output identifies the running source version", async ()
       sourceRoot,
     });
     assert.equal(exitCode, 0);
-    assert.match(output.text(), /Source version: 0\.1\.86/);
+    assert.match(output.text(), /Source version: 0\.2\.0/);
     assert.match(output.text(), /PLAN\s+install/);
     assert.equal(errorOutput.text(), "");
   });
@@ -394,7 +394,7 @@ test("install and update leave a recognized legacy Codex copy unchanged", async 
 
 test("validates versions and source payload", async () => {
   const source = await validateSource(sourceRoot);
-  assert.equal(source.version, "0.1.86");
+  assert.equal(source.version, "0.2.0");
   assert.deepEqual(await payloadFiles(sourceRoot, false), [
     "SKILL.md",
     "VERSION",
@@ -402,6 +402,7 @@ test("validates versions and source payload", async () => {
     path.join("references", "codex-adapter.md"),
     path.join("references", "deliberation.sudo.md"),
     path.join("references", "full.sudo.md"),
+    path.join("references", "global-memory.mjs"),
     path.join("references", "memory.mjs"),
     path.join("references", "memory.sudo.md"),
     path.join("references", "protocol.sudo.md"),
@@ -424,7 +425,7 @@ test("installs selected targets with target-specific payloads", async () => {
 
     const codex = path.join(homeDir, ".agents", "skills", "quorum");
     const claude = path.join(homeDir, ".claude", "skills", "quorum");
-    assert.equal((await readFile(path.join(codex, "VERSION"), "utf8")).trim(), "0.1.86");
+    assert.equal((await readFile(path.join(codex, "VERSION"), "utf8")).trim(), "0.2.0");
     assert.equal((await readFile(path.join(codex, "agents", "openai.yaml"), "utf8")).includes("Quorum"), true);
     await assert.rejects(readFile(path.join(claude, "agents", "openai.yaml")), /ENOENT/);
   });
@@ -539,7 +540,7 @@ test("refuses foreign content and a newer installation even with yes", async () 
     assert.equal(result.reason, "foreign content");
 
     await writeFile(path.join(destination, "SKILL.md"), "---\nname: quorum\n---\n");
-    await writeFile(path.join(destination, "VERSION"), "0.2.0\n");
+    await writeFile(path.join(destination, "VERSION"), "0.3.0\n");
     result = (await installSelected({
       sourceRoot,
       targetIds: ["cursor"],

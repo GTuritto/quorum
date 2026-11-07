@@ -7,7 +7,19 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## Unreleased
 
-## [0.1.86] - Unreleased
+## [0.2.0] - 2026-11-07
+
+### Added
+
+- Add optional local global memory with explicit per-record project sharing,
+  destination preview and admission, requested historical reads, destination
+  revocation, and exact-scope global deletion. Global memory defaults off and
+  does not automatically capture, retrieve, or reuse decisions.
+- Bind global snapshots and admission receipts to source and destination
+  identities, preserve schema-v1 project stores, and fail closed on unsafe
+  managed paths or ambiguous scope.
+
+## [0.1.86] - 2026-11-07
 
 ### Added
 
@@ -246,7 +258,8 @@ Release dates use UTC; npm recorded publication at 22:57:40 UTC.
 - Automated unit and integration coverage for installer behavior and payload
   integrity.
 
-[Unreleased]: https://github.com/GTuritto/quorum/compare/v0.1.86...HEAD
+[Unreleased]: https://github.com/GTuritto/quorum/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/GTuritto/quorum/compare/v0.1.86...v0.2.0
 [0.1.86]: https://github.com/GTuritto/quorum/compare/v0.1.84...v0.1.86
 [0.1.84]: https://github.com/GTuritto/quorum/compare/v0.1.83...v0.1.84
 [0.1.83]: https://github.com/GTuritto/quorum/compare/v0.1.82...v0.1.83

@@ -284,6 +284,34 @@ Forget the saved database decision for this project.
 Forget all Quorum memory for this project.
 ```
 
+### Global memory (0.2.0 candidate)
+
+Global memory is a separate local store, off by default. Enabling it does not
+move or expose any project records. To share a decision, select its exact
+project record and authorize that one transfer. If project automatic capture
+is off, explicitly permit this one share; the setting stays off. In the
+destination project, request a preview and then admit that exact snapshot.
+Requested reads remain historical and unvalidated. Quorum does not automatically
+retrieve or reuse global records.
+
+```text
+Turn on Quorum global memory.
+Share the saved decision with ID <project-record-ID> from this project globally.
+Preview global decision <global-ID> for this destination project.
+Admit that previewed global decision for this project.
+Show the admitted global decision <global-ID> as historical context.
+Revoke this project's admission of global decision <global-ID>.
+Forget global decision <global-ID>.
+```
+
+Global forget removes the selected Quorum-managed snapshot and all admissions
+but leaves its source project record. Project forget removes the project record
+but leaves an explicitly shared global snapshot; ask for the linked global IDs
+when deciding whether to forget those too. A copied or renamed project does not
+silently inherit an admission. The helper stops on ambiguous identity, foreign
+storage, or lock failures. This local deletion does not erase chat history,
+exports, or other tools' copies.
+
 On persists authorization to capture meaningful final decisions and material
 changes from future Quorum runs in this project. It does not backfill earlier
 turns or record every answer. Off stops automatic capture and preserves records.
@@ -403,14 +431,14 @@ npx quorum-skill
 Pin the exact release when reproducibility matters:
 
 ```sh
-npx quorum-skill@0.1.86
+npx quorum-skill@0.2.0
 ```
 
 `npx` may ask before downloading an uncached package. Put `-y` before the
 package name to suppress that npm prompt:
 
 ```sh
-npx -y quorum-skill@0.1.86 --all --dry-run
+npx -y quorum-skill@0.2.0 --all --dry-run
 ```
 
 This does not suppress Quorum's replacement confirmation. Pass Quorum's
@@ -421,13 +449,13 @@ This does not suppress Quorum's replacement confirmation. Pass Quorum's
 Download the tarball from npm into an empty working directory:
 
 ```sh
-npm pack quorum-skill@0.1.86
+npm pack quorum-skill@0.2.0
 ```
 
 On macOS or Linux:
 
 ```sh
-tar -xzf quorum-skill-0.1.86.tgz &&
+tar -xzf quorum-skill-0.2.0.tgz &&
 cd package &&
 ./install.sh
 ```
@@ -436,7 +464,7 @@ On Windows PowerShell with `tar` available, run each command after the previous
 one succeeds:
 
 ```powershell
-tar -xzf quorum-skill-0.1.86.tgz
+tar -xzf quorum-skill-0.2.0.tgz
 Set-Location .\package
 .\install.ps1
 ```
@@ -546,10 +574,10 @@ npx quorum-skill --update
 
 `--upgrade` is an exact alias. The installer performs no network request and
 does not choose a release. npm selects the package first, so this command
-applies version 0.1.86 explicitly after publication:
+applies version 0.2.0 explicitly after publication:
 
 ```sh
-npx quorum-skill@0.1.86 --update
+npx quorum-skill@0.2.0 --update
 ```
 
 An explicit update target stays absent when it is not installed:

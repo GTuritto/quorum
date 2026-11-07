@@ -18,6 +18,7 @@ export const EXPECTED_PACKAGE_FILES = Object.freeze([
   "references/codex-adapter.md",
   "references/deliberation.sudo.md",
   "references/full.sudo.md",
+  "references/global-memory.mjs",
   "references/memory.mjs",
   "references/memory.sudo.md",
   "references/protocol.sudo.md",

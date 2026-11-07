@@ -1,5 +1,9 @@
 # Staged-loading verification
 
+The table below is historical 0.1.81 evidence. The 0.2.0 global-memory
+candidate extends `references/memory.sudo.md`; its static token totals and
+host behavior must be measured again before a new staged-loading claim.
+
 Date: 2026-10-01. Version 0.1.81 source verification against the 0.1.80 baseline
 commit `9f28d03`. npm publication was authorized on 2026-10-01 after the source
 commit and push. Changes to active user installations remain outside this request.

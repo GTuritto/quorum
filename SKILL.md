@@ -1,8 +1,8 @@
 ---
 name: quorum
-description: "Structured second opinions for AI assistants. Use Quorum to examine consequential questions in coding or general chat, challenge plans, compare options, review code, or save and revisit project decisions. It adapts review depth to task stakes, with independent review when supported. Direct handles routine requests; explicit Super can assign model and effort per agent. Load entry/core before task tools; Direct never bypasses authorization."
+description: "Structured second opinions for AI assistants. Use Quorum to examine consequential questions in coding or general chat, challenge plans, compare options, review code, or save and revisit decisions in project or explicitly shared local global memory. It adapts review depth to task stakes, with independent review when supported. Direct handles routine requests; explicit Super can assign model and effort per agent. Load entry/core before task tools; Direct never bypasses authorization."
 metadata:
-  version: "0.1.86"
+  version: "0.2.0"
 ---
 
 # Quorum

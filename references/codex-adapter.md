@@ -20,7 +20,7 @@ CodexBinding {
     conversation by default; files only with authorized project changes or explicit persistence request
     compact Markdown|YAML|JSON RecoveryCapsule; no private reasoning; validate revision/assumptions on recovery
   }
-  Memory: only after memory.sudo.md is loaded, bind canonical Memory to installed references/memory.mjs; never host-global memory
+  Memory: only after memory.sudo.md is loaded, bind canonical Memory to installed references/memory.mjs; global means Quorum's local user store, never host memory
   Output { portable Decision + required receipt; coordinator synthesis; no hidden deliberation }
   authority: worker analysis never authorizes commit/push/deploy/publish/messages/purchases/deletion
 }

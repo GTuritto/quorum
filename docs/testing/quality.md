@@ -41,6 +41,8 @@ Quorum, grade an answer, or repair the host-ordering failures recorded in the
 and workflow practice; reserve unseen cases for a stronger quality claim.
 The [initial baseline](quality-baseline-2026-11-06.md) records which levels
 were actually checked when this framework was introduced.
+The [0.2.0 candidate](0.2.0-release.md) records its helper and packed-install
+evidence separately from pending fresh-host acceptance.
 
 ## Versioned baseline history
 

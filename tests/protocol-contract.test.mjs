@@ -275,9 +275,22 @@ test("recovery reroutes independent inputs using the same launch ledger and cont
   const run = core.slice(core.indexOf("  run(input) {"));
   assert.match(core, /remaining = cap - ledger.totalLaunches/);
   assert.match(core, /remaining < 2[^\n]*miniPlan\(cap/);
-  const reroute = run.indexOf("evaluateFromRouting(resolved,ledger)", run.indexOf("independentCurrentInputs("));
+  const reroute = run.indexOf("evaluateFromRouting(resolved,ledger,plan)", run.indexOf("independentCurrentInputs("));
   assert.ok(reroute > run.indexOf("recheckExactRecords("));
   assert.match(run, /assessTaskEvidenceConstraintsAndMaterialUncertainty\(resolved\)/);
   assert.match(run, /exclude findings dependent on withdrawn history/);
   assert.doesNotMatch(run, /rebuildFromIndependentCurrentInputs\(resolved,plan/);
+});
+
+test('withdrawal after worker synthesis enters the original closed panel guard before fresh allocation', async () => {
+  const core = await read("references/protocol.sudo.md");
+  const full = await read("references/full.sudo.md");
+  const run = core.slice(core.indexOf("    evaluateFromRouting("));
+  const retain = run.indexOf("Full.recoverCompletedPanel(priorPlan,ledger");
+  assert.ok(retain >= 0 && retain < run.indexOf("plan = allocate("));
+  assert.match(run, /evaluateFromRouting\(resolved,ledger,plan\)/);
+  assert.match(full, /dispatchEligibility[^\n]*closed/);
+  assert.match(full, /admission = dispatchEligibility\(priorPlan,ledger,phase=closed\)/);
+  assert.match(full, /independently supported[^\n]*review/);
+  assert.match(full, /pending[^\n]*successful[^\n]*slots/);
 });

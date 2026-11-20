@@ -205,3 +205,49 @@ test('successful replacement provenance uses accepted artifacts while retaining 
     assert.deepEqual(receipt.valid,{candidates:1,reviewers:1});
   }
 });
+
+test('post-synthesis withdrawal retains the panel and denies generation even with spare cap', () => {
+  const input = { level: 'auto', candidates: 1, reviewers: 1, maxWorkers: 4,
+    signals: { consequential: true, uncertain: true, independentValue: true } };
+  const original = planDeliberation(input);
+  const launches = [candidate('writer'), reviewer('review')];
+  const recovered = planDeliberation(input, { plan: original, launches, independentResultIds: [] });
+  assert.equal(recovered.tier, 'mini');
+  assert.equal(recovered.maxWorkers, 4);
+  assert.equal(dispatchEligibility(recovered, launches, 'candidate').allowed, false);
+  assert.equal(dispatchEligibility(recovered, launches, 'reviewer').allowed, false);
+  const receipt = executionReceipt(recovered, launches);
+  assert.equal(receipt.totalLaunches, 2);
+  assert.deepEqual(receipt.valid, { candidates: 0, reviewers: 0 });
+  assert.equal(receipt.workerProvenance, 'isolated-models-unverified');
+  assert.throws(() => executionReceipt(recovered, []), /ledger/);
+  assert.throws(() => planDeliberation(input, { plan: recovered, launches: [] }), /original/);
+  const unused = planDeliberation({ level: 'auto', maxWorkers: 0 });
+  const noLaunches = { plan: unused, launches: [] };
+  assert.equal(planDeliberation({ level: 'auto', maxWorkers: 0,
+    signals: { boundedAmbiguity: true } }, noLaunches).tier, 'mini');
+  assert.throws(() => planDeliberation({ level: 'auto', maxWorkers: 4 }, noLaunches), /controls/);
+});
+
+test('spent cap cannot start a replacement panel; independently supported results can still be synthesized', () => {
+  const input = { level: 'full', candidates: 1, reviewers: 1, maxWorkers: 2 };
+  const plan = planDeliberation(input);
+  const launches = [candidate('writer'), reviewer('review')];
+  const recover = independentResultIds => planDeliberation(input, { plan, launches, independentResultIds });
+  assert.equal(recover([]).tier, 'mini');
+  assert.equal(recover(['review']).tier, 'mini');
+  const retained = recover(['writer', 'review']);
+  assert.equal(retained.tier, 'full');
+  assert.equal(dispatchEligibility(retained, launches, 'candidate').allowed, false);
+  assert.deepEqual(executionReceipt(retained, launches).valid, { candidates: 1, reviewers: 1 });
+});
+
+test('open generation permits its failed replacement; completed synthesis cannot reopen it', () => {
+  const input = { level: 'full', candidates: 1, reviewers: 1, maxWorkers: 3 };
+  const plan = planDeliberation(input);
+  const launches = [candidate('failed', { valid: false })];
+  assert.equal(dispatchEligibility(plan, launches, 'candidate').allowed, true);
+  const closed = planDeliberation(input, { plan, launches });
+  assert.equal(dispatchEligibility(closed, launches, 'candidate').allowed, false);
+  assert.equal(executionReceipt(closed, launches).totalLaunches, 1);
+});

@@ -172,7 +172,7 @@ Quorum {
       resolved.context += onlyCompatibleSupport(reliance) // keep other dispositions for receipt only
     }
     ledger = appendOnlyLaunchLedgerForThisRequest // initialize once, including zero-launch tiers
-    evaluateFromRouting(resolved,ledger) {
+    evaluateFromRouting(resolved,ledger,priorPlan?) {
       effort = ReasoningPolicy?.chooseEffort(resolved) ?? permittedCurrentEffort
       signals = assessTaskEvidenceConstraintsAndMaterialUncertainty(resolved)
       resolved.explorationActive = resolveExploration(resolved,signals)
@@ -180,6 +180,11 @@ Quorum {
       if (selectedTier == direct) resolved.explorationActive=false
       if (selectedTier in [mini,full,super]) requireRead("references/deliberation.sudo.md")
       if (selectedTier in [full,super]) requireRead("references/full.sudo.md") // before capability discovery/allocation/dispatch
+      if (ledger.totalLaunches > 0) {
+        // Withdrawal occurs after synthesis. The original panel and its frozen slots stay closed, even if the new route is Full/Super and capacity remains.
+        requireRead("references/full.sudo.md") // use the original Full contract even if the fresh route is Mini/Direct
+        return Full.recoverCompletedPanel(priorPlan,ledger,selectedTier,resolved) // no new allocation or execution of that panel
+      }
       plan = allocate(resolved,selectedTier,ledger)
       if (input.level == super) plan.inference = Super.prepare(plan,input,runtimeCapabilities) // before any worker dispatch
       result = memory.storageOnly ? executeMemory(memory)
@@ -195,8 +200,8 @@ Quorum {
       if (any required check failed) {
         resolved = independentCurrentInputs(resolved) // retain original requested controls and authorized current facts; discard all historical support and dependent signals
         markWithdrawn(reliance,check) // preserve original IDs, assessments and receipts
-        result, plan, finalTier = evaluateFromRouting(resolved,ledger)
-        // Recompute signals, exploration, route and allocation. Never replay memory operations. Keep every prior launch and exclude findings dependent on withdrawn history from the new synthesis.
+        result, plan, finalTier = evaluateFromRouting(resolved,ledger,plan)
+        // Recompute signals, exploration and route; allocate only before the first launch. Never replay memory operations. Keep every prior launch and exclude findings dependent on withdrawn history from the new synthesis.
         disclose initial and fresh routes, actual tier and any fallback under the remaining launch budget
       }
     }

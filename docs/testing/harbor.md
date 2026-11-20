@@ -1,6 +1,6 @@
 # Harbor evaluation bridge
 
-Status: development bridge prepared for the unreleased Quorum 0.2.1 candidate.
+Status: development bridge released with Quorum 0.2.1 on 2026-11-20.
 The initial host baseline completed on 2026-11-09; its single-assessor scores
 remain provisional and do not establish a Quorum decision-quality improvement.
 

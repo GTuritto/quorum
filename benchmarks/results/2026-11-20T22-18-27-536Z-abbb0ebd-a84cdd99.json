@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-11-20T22:18:27.536Z",
+  "suiteVersion": 1,
+  "source": {
+    "gitHead": "abbb0ebdddc819c9d38fe0ce5873e4cacf6dbf56",
+    "dirty": true,
+    "statusAtStart": [
+      "M CHANGELOG.md",
+      " M README.md",
+      " M SKILL.md",
+      " M VERSION",
+      " M docs/guide.md",
+      " M package.json",
+      " M tests/distribution.test.mjs",
+      " M tests/install.test.mjs",
+      " M tests/test-install.sh",
+      " M tests/version.test.mjs",
+      "?? docs/testing/0.2.2-release.md"
+    ],
+    "nodeVersion": "v25.9.0"
+  },
+  "qa": {
+    "passed": false,
+    "tests": {
+      "total": 248,
+      "passed": 246,
+      "failed": 2,
+      "installerIntegrationPassed": false
+    },
+    "checks": [
+      {
+        "command": "npm test",
+        "passed": false,
+        "exitCode": 1,
+        "durationMs": 7672,
+        "outputSha256": "0941e41c23c1b820195e2a657dd7c8cb632d94b1fd725498c2b988f2b270d4d1"
+      },
+      {
+        "command": "npm run benchmark:check",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 227,
+        "outputSha256": "b72169a87180316209841aaf9b36680bec1992b5eba7bca1a936060805b8c237"
+      },
+      {
+        "command": "npm run dist",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 546,
+        "outputSha256": "b111f026a06c308874d04d467f008edbf97d2960e995a0842c882697ce5e2803"
+      },
+      {
+        "command": "git diff --check",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 13,
+        "outputSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ],
+    "archives": {
+      "passed": true,
+      "files": [
+        {
+          "name": "quorum-skill-0.2.2.tgz",
+          "passed": true
+        },
+        {
+          "name": "quorum-skill-0.2.2.zip",
+          "passed": true
+        }
+      ]
+    },
+    "baseline": "2026-11-20T20-42-31-995Z-c6426dfd-63faaae8.json",
+    "changeInPassedTests": 24
+  },
+  "benchmark": null
+}

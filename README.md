@@ -7,7 +7,7 @@
 | |_| || |_| || |_| ||  _ < | |_| || |  | |
  \__\_\ \___/  \___/ |_| \_\ \___/ |_|  |_|
 
-                    QUORUM v0.2.1
+                    QUORUM v0.2.2
 ```
 
 **Give your AI assistant a structured second opinion.**
@@ -34,7 +34,7 @@ npx quorum-skill --targets claude
 ```
 
 Run `npx quorum-skill` to detect supported tools, or use `--help` for all options.
-Pin this version with `npx quorum-skill@0.2.1 --targets codex`.
+Pin this version with `npx quorum-skill@0.2.2 --targets codex`.
 
 ## Use it
 
@@ -81,15 +81,17 @@ model usage; verify consequential findings against relevant evidence and tests.
 ## Optional memory
 
 Ask Quorum to remember a decision, or say “Turn Quorum memory on for this project”
-to capture future meaningful decisions automatically. Automatic capture is off
-by default. Project decisions stay local unless you explicitly share one.
+to enable automatic capture. In 0.2.2, an existing or new project-on setting also
+allows bounded selection of saved local decisions for eligible tasks. Quorum
+checks a candidate against current evidence and rechecks the exact record before
+relying on it. Project memory defaults off. Explicit historical reads still
+work while off, and a request for fresh evaluation skips automatic selection.
 
-Version 0.2.0 added a separate local global store. You can
-explicitly share one saved project record, preview and admit it in another
-project, then request it as historical, unvalidated context. Global memory is
-off by default; enabling it does not export existing project records. Project
-and global forget target their own scopes. See the [user guide](docs/guide.md)
-and [0.2.0 smoke procedure](docs/testing/0.2.0-smoke.md).
+Global memory is a separate local store, off by default. Access stays explicit
+even when global memory is on. Share one saved project record, preview and
+admit it in another project, then request it by exact ID. See the
+[user guide](docs/guide.md#project-decision-memory) and
+[0.2.2 release verification](docs/testing/0.2.2-release.md).
 
 ## Update
 

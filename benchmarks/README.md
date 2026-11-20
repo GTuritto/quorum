@@ -1,7 +1,13 @@
 # Decision-quality benchmark, v1
 
-Status: initial corpus and scoring tool. No live benchmark results are claimed.
+Status: initial corpus and scoring tool. A [provisional host baseline](../docs/testing/0.2.1-harbor-baseline.md)
+records twelve historical Harbor trials; no Quorum quality improvement is established.
 Cases are synthetic and public; give an agent only `prompt`, never the criteria.
+
+The optional [Harbor bridge](../docs/testing/harbor.md) exports these cases as
+container tasks and prepares human assessments for this scorer. Harbor's task
+completion reward only confirms that an answer artifact exists. It is not a
+decision-quality score.
 
 Run `npm run benchmark:check` to validate the corpus. For an observed run, start
 a fresh host session for each case and variant, record host version and Quorum

@@ -1,0 +1,371 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-11-09T02:55:45.458Z",
+  "suiteVersion": 1,
+  "source": {
+    "gitHead": "af15406bb24c4670751fc39b2d7549f02b0bc535",
+    "dirty": true,
+    "statusAtStart": [
+      "M CHANGELOG.md",
+      " M README.md",
+      " M SKILL.md",
+      " M VERSION",
+      " M benchmarks/README.md",
+      " M docs/testing/quality.md",
+      " M package.json",
+      " M tests/distribution.test.mjs",
+      " M tests/install.test.mjs",
+      " M tests/node-version-entry.test.mjs",
+      " M tests/test-install.sh",
+      " M tests/version.test.mjs",
+      "?? docs/testing/harbor.md",
+      "?? scripts/harbor.mjs",
+      "?? tests/harbor.test.mjs"
+    ],
+    "nodeVersion": "v26.7.0"
+  },
+  "qa": {
+    "passed": true,
+    "tests": {
+      "total": 214,
+      "passed": 214,
+      "failed": 0,
+      "installerIntegrationPassed": true
+    },
+    "checks": [
+      {
+        "command": "npm test",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 5423,
+        "outputSha256": "a92e4f4863a6e8b2fed793919dcd68f8c899adfe2677bf1ea7e1b71e9d290b75"
+      },
+      {
+        "command": "npm run benchmark:check",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 125,
+        "outputSha256": "a956396c6609fb509f3de0f3ac01728b95bd2d5ab5cec5b3ec46050d8fcaab2c"
+      },
+      {
+        "command": "npm run dist",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 343,
+        "outputSha256": "078036e850da7609477b7717a1b82d80794acdea18848f5f35ab3cac272dfd97"
+      },
+      {
+        "command": "git diff --check",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 12,
+        "outputSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ],
+    "archives": {
+      "passed": true,
+      "files": [
+        {
+          "name": "quorum-skill-0.2.1.tgz",
+          "passed": true
+        },
+        {
+          "name": "quorum-skill-0.2.1.zip",
+          "passed": true
+        }
+      ]
+    },
+    "baseline": "2026-11-06T21-53-15-661Z-d79e968f-7ce89009.json",
+    "changeInPassedTests": 4
+  },
+  "benchmark": {
+    "suiteVersion": 1,
+    "inputSha256": "b9dcc57384794dd568970a6d8a06f24b05e569fac53a16e0b8ba7f7e8c0d8b4b",
+    "summary": [
+      {
+        "variant": "host-baseline",
+        "caseId": "documentation-discovery",
+        "caseFingerprint": "bed305694ccfc9697cfff98ca7df8f195a89b24b1657c1a0fc751360dd28da28",
+        "host": "Harbor 0.25.0 / Codex 0.167.0",
+        "configuration": "openai/gpt-5.2, medium effort, web disabled, no Quorum skill",
+        "sourceRevision": "af15406bb24c4670751fc39b2d7549f02b0bc535+working-tree-0.2.1-harbor",
+        "runs": 3,
+        "meanCriterionFraction": 1,
+        "meanCriteria": {
+          "mechanism-diversity": 2,
+          "constraint-fit": 2,
+          "trial": 2
+        },
+        "hardFailures": 0,
+        "observedLatencyRuns": 3,
+        "meanLatencyMs": 125710,
+        "observedTokenRuns": 3,
+        "meanTokens": 28973.3
+      },
+      {
+        "variant": "host-baseline",
+        "caseId": "manual-export-dependency",
+        "caseFingerprint": "f0f49bb32adab4a1ad271919cfa2e26bd73a123ceafc4bb8fa32711ed2d7ab27",
+        "host": "Harbor 0.25.0 / Codex 0.167.0",
+        "configuration": "openai/gpt-5.2, medium effort, web disabled, no Quorum skill",
+        "sourceRevision": "af15406bb24c4670751fc39b2d7549f02b0bc535+working-tree-0.2.1-harbor",
+        "runs": 3,
+        "meanCriterionFraction": 1,
+        "meanCriteria": {
+          "separate-flows": 2,
+          "honest-limits": 2,
+          "next-test": 2
+        },
+        "hardFailures": 0,
+        "observedLatencyRuns": 3,
+        "meanLatencyMs": 113468.7,
+        "observedTokenRuns": 3,
+        "meanTokens": 34084
+      },
+      {
+        "variant": "host-baseline",
+        "caseId": "model-provenance",
+        "caseFingerprint": "9fc8802185ddfc37569cd90835ae6d49e16400ba97f87d13dcbf75a39614ac26",
+        "host": "Harbor 0.25.0 / Codex 0.167.0",
+        "configuration": "openai/gpt-5.2, medium effort, web disabled, no Quorum skill",
+        "sourceRevision": "af15406bb24c4670751fc39b2d7549f02b0bc535+working-tree-0.2.1-harbor",
+        "runs": 3,
+        "meanCriterionFraction": 1,
+        "meanCriteria": {
+          "requested-vs-observed": 2,
+          "correct-receipt": 2,
+          "quality-limit": 2
+        },
+        "hardFailures": 0,
+        "observedLatencyRuns": 3,
+        "meanLatencyMs": 106959.7,
+        "observedTokenRuns": 3,
+        "meanTokens": 26339.7
+      },
+      {
+        "variant": "host-baseline",
+        "caseId": "permission-rollout",
+        "caseFingerprint": "2bf321064e0ddbb24c159e91babcd491ee2cdb687c1e65aef24bd25b03d24ddd",
+        "host": "Harbor 0.25.0 / Codex 0.167.0",
+        "configuration": "openai/gpt-5.2, medium effort, web disabled, no Quorum skill",
+        "sourceRevision": "af15406bb24c4670751fc39b2d7549f02b0bc535+working-tree-0.2.1-harbor",
+        "runs": 3,
+        "meanCriterionFraction": 1,
+        "meanCriteria": {
+          "privacy-boundary": 2,
+          "reversible-step": 2,
+          "evidence-honesty": 2
+        },
+        "hardFailures": 0,
+        "observedLatencyRuns": 3,
+        "meanLatencyMs": 107672.7,
+        "observedTokenRuns": 3,
+        "meanTokens": 16598.7
+      }
+    ],
+    "scores": [
+      {
+        "caseId": "documentation-discovery",
+        "variant": "host-baseline",
+        "host": "Harbor 0.25.0 / Codex 0.167.0",
+        "configuration": "openai/gpt-5.2, medium effort, web disabled, no Quorum skill",
+        "sourceRevision": "af15406bb24c4670751fc39b2d7549f02b0bc535+working-tree-0.2.1-harbor",
+        "scores": {
+          "mechanism-diversity": 2,
+          "constraint-fit": 2,
+          "trial": 2
+        },
+        "hardFailure": false,
+        "latencyMs": 126184,
+        "tokens": 32916
+      },
+      {
+        "caseId": "documentation-discovery",
+        "variant": "host-baseline",
+        "host": "Harbor 0.25.0 / Codex 0.167.0",
+        "configuration": "openai/gpt-5.2, medium effort, web disabled, no Quorum skill",
+        "sourceRevision": "af15406bb24c4670751fc39b2d7549f02b0bc535+working-tree-0.2.1-harbor",
+        "scores": {
+          "mechanism-diversity": 2,
+          "constraint-fit": 2,
+          "trial": 2
+        },
+        "hardFailure": false,
+        "latencyMs": 122487,
+        "tokens": 36576
+      },
+      {
+        "caseId": "documentation-discovery",
+        "variant": "host-baseline",
+        "host": "Harbor 0.25.0 / Codex 0.167.0",
+        "configuration": "openai/gpt-5.2, medium effort, web disabled, no Quorum skill",
+        "sourceRevision": "af15406bb24c4670751fc39b2d7549f02b0bc535+working-tree-0.2.1-harbor",
+        "scores": {
+          "mechanism-diversity": 2,
+          "constraint-fit": 2,
+          "trial": 2
+        },
+        "hardFailure": false,
+        "latencyMs": 128459,
+        "tokens": 17428
+      },
+      {
+        "caseId": "manual-export-dependency",
+        "variant": "host-baseline",
+        "host": "Harbor 0.25.0 / Codex 0.167.0",
+        "configuration": "openai/gpt-5.2, medium effort, web disabled, no Quorum skill",
+        "sourceRevision": "af15406bb24c4670751fc39b2d7549f02b0bc535+working-tree-0.2.1-harbor",
+        "scores": {
+          "separate-flows": 2,
+          "honest-limits": 2,
+          "next-test": 2
+        },
+        "hardFailure": false,
+        "latencyMs": 121986,
+        "tokens": 31500
+      },
+      {
+        "caseId": "manual-export-dependency",
+        "variant": "host-baseline",
+        "host": "Harbor 0.25.0 / Codex 0.167.0",
+        "configuration": "openai/gpt-5.2, medium effort, web disabled, no Quorum skill",
+        "sourceRevision": "af15406bb24c4670751fc39b2d7549f02b0bc535+working-tree-0.2.1-harbor",
+        "scores": {
+          "separate-flows": 2,
+          "honest-limits": 2,
+          "next-test": 2
+        },
+        "hardFailure": false,
+        "latencyMs": 106535,
+        "tokens": 39165
+      },
+      {
+        "caseId": "manual-export-dependency",
+        "variant": "host-baseline",
+        "host": "Harbor 0.25.0 / Codex 0.167.0",
+        "configuration": "openai/gpt-5.2, medium effort, web disabled, no Quorum skill",
+        "sourceRevision": "af15406bb24c4670751fc39b2d7549f02b0bc535+working-tree-0.2.1-harbor",
+        "scores": {
+          "separate-flows": 2,
+          "honest-limits": 2,
+          "next-test": 2
+        },
+        "hardFailure": false,
+        "latencyMs": 111885,
+        "tokens": 31587
+      },
+      {
+        "caseId": "model-provenance",
+        "variant": "host-baseline",
+        "host": "Harbor 0.25.0 / Codex 0.167.0",
+        "configuration": "openai/gpt-5.2, medium effort, web disabled, no Quorum skill",
+        "sourceRevision": "af15406bb24c4670751fc39b2d7549f02b0bc535+working-tree-0.2.1-harbor",
+        "scores": {
+          "requested-vs-observed": 2,
+          "correct-receipt": 2,
+          "quality-limit": 2
+        },
+        "hardFailure": false,
+        "latencyMs": 119766,
+        "tokens": 31428
+      },
+      {
+        "caseId": "model-provenance",
+        "variant": "host-baseline",
+        "host": "Harbor 0.25.0 / Codex 0.167.0",
+        "configuration": "openai/gpt-5.2, medium effort, web disabled, no Quorum skill",
+        "sourceRevision": "af15406bb24c4670751fc39b2d7549f02b0bc535+working-tree-0.2.1-harbor",
+        "scores": {
+          "requested-vs-observed": 2,
+          "correct-receipt": 2,
+          "quality-limit": 2
+        },
+        "hardFailure": false,
+        "latencyMs": 99214,
+        "tokens": 23762
+      },
+      {
+        "caseId": "model-provenance",
+        "variant": "host-baseline",
+        "host": "Harbor 0.25.0 / Codex 0.167.0",
+        "configuration": "openai/gpt-5.2, medium effort, web disabled, no Quorum skill",
+        "sourceRevision": "af15406bb24c4670751fc39b2d7549f02b0bc535+working-tree-0.2.1-harbor",
+        "scores": {
+          "requested-vs-observed": 2,
+          "correct-receipt": 2,
+          "quality-limit": 2
+        },
+        "hardFailure": false,
+        "latencyMs": 101899,
+        "tokens": 23829
+      },
+      {
+        "caseId": "permission-rollout",
+        "variant": "host-baseline",
+        "host": "Harbor 0.25.0 / Codex 0.167.0",
+        "configuration": "openai/gpt-5.2, medium effort, web disabled, no Quorum skill",
+        "sourceRevision": "af15406bb24c4670751fc39b2d7549f02b0bc535+working-tree-0.2.1-harbor",
+        "scores": {
+          "privacy-boundary": 2,
+          "reversible-step": 2,
+          "evidence-honesty": 2
+        },
+        "hardFailure": false,
+        "latencyMs": 102427,
+        "tokens": 16296
+      },
+      {
+        "caseId": "permission-rollout",
+        "variant": "host-baseline",
+        "host": "Harbor 0.25.0 / Codex 0.167.0",
+        "configuration": "openai/gpt-5.2, medium effort, web disabled, no Quorum skill",
+        "sourceRevision": "af15406bb24c4670751fc39b2d7549f02b0bc535+working-tree-0.2.1-harbor",
+        "scores": {
+          "privacy-boundary": 2,
+          "reversible-step": 2,
+          "evidence-honesty": 2
+        },
+        "hardFailure": false,
+        "latencyMs": 104365,
+        "tokens": 16834
+      },
+      {
+        "caseId": "permission-rollout",
+        "variant": "host-baseline",
+        "host": "Harbor 0.25.0 / Codex 0.167.0",
+        "configuration": "openai/gpt-5.2, medium effort, web disabled, no Quorum skill",
+        "sourceRevision": "af15406bb24c4670751fc39b2d7549f02b0bc535+working-tree-0.2.1-harbor",
+        "scores": {
+          "privacy-boundary": 2,
+          "reversible-step": 2,
+          "evidence-honesty": 2
+        },
+        "hardFailure": false,
+        "latencyMs": 116226,
+        "tokens": 16666
+      }
+    ],
+    "comparison": [
+      {
+        "caseId": "documentation-discovery",
+        "variant": "host-baseline",
+        "baseline": null
+      },
+      {
+        "caseId": "manual-export-dependency",
+        "variant": "host-baseline",
+        "baseline": null
+      },
+      {
+        "caseId": "model-provenance",
+        "variant": "host-baseline",
+        "baseline": null
+      },
+      {
+        "caseId": "permission-rollout",
+        "variant": "host-baseline",
+        "baseline": null
+      }
+    ]
+  }
+}

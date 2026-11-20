@@ -7,7 +7,7 @@
 | |_| || |_| || |_| ||  _ < | |_| || |  | |
  \__\_\ \___/  \___/ |_| \_\ \___/ |_|  |_|
 
-                    QUORUM v0.2.0
+                    QUORUM v0.2.1
 ```
 
 **Give your AI assistant a structured second opinion.**
@@ -34,7 +34,7 @@ npx quorum-skill --targets claude
 ```
 
 Run `npx quorum-skill` to detect supported tools, or use `--help` for all options.
-Pin this version with `npx quorum-skill@0.2.0 --targets codex`.
+Pin this version with `npx quorum-skill@0.2.1 --targets codex`.
 
 ## Use it
 
@@ -84,7 +84,7 @@ Ask Quorum to remember a decision, or say “Turn Quorum memory on for this proj
 to capture future meaningful decisions automatically. Automatic capture is off
 by default. Project decisions stay local unless you explicitly share one.
 
-Version 0.2.0 adds a separate local global store. You can
+Version 0.2.0 added a separate local global store. You can
 explicitly share one saved project record, preview and admit it in another
 project, then request it as historical, unvalidated context. Global memory is
 off by default; enabling it does not export existing project records. Project
@@ -96,6 +96,26 @@ and [0.2.0 smoke procedure](docs/testing/0.2.0-smoke.md).
 ```sh
 npx quorum-skill --update
 ```
+
+## Evaluate with Harbor
+
+Quorum 0.2.1 adds a development-only bridge for the
+[Harbor agent evaluation framework](https://github.com/harbor-framework/harbor).
+It exports the public decision cases as local Harbor tasks and converts completed
+human assessments into Quorum's existing observed-run format. Harbor is optional
+and is not included in the npm package or installed skill.
+
+```sh
+npm run harbor:export -- --output /tmp/quorum-harbor
+harbor datasets init gturitto/quorum -o /tmp/quorum-harbor --author "Giuseppe Turitto"
+harbor run -p /tmp/quorum-harbor -a codex -m "<model>" -k 3
+npm run harbor:report -- --assessments /path/to/assessments.json --output /tmp/observed-runs.json
+npm run quality:record -- --benchmark /tmp/observed-runs.json
+```
+
+See the [Harbor evaluation procedure](docs/testing/harbor.md) and the
+[initial host baseline](docs/testing/0.2.1-harbor-baseline.md) for the assessment
+format, privacy boundary, evidence requirements, and current results.
 
 ## Learn more
 

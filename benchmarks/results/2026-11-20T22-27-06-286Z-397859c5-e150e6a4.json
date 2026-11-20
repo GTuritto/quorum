@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-11-20T22:27:06.286Z",
+  "suiteVersion": 1,
+  "source": {
+    "gitHead": "397859c5664f036c69d2bec56fa885b46bf63a76",
+    "dirty": false,
+    "statusAtStart": [],
+    "nodeVersion": "v25.9.0"
+  },
+  "qa": {
+    "passed": true,
+    "tests": {
+      "total": 248,
+      "passed": 248,
+      "failed": 0,
+      "installerIntegrationPassed": true
+    },
+    "checks": [
+      {
+        "command": "npm test",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 9576,
+        "outputSha256": "375d921fb7ec35a64144816587a3526a86ad19350a537c48dac8e2b174df880e"
+      },
+      {
+        "command": "npm run benchmark:check",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 215,
+        "outputSha256": "b72169a87180316209841aaf9b36680bec1992b5eba7bca1a936060805b8c237"
+      },
+      {
+        "command": "npm run dist",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 544,
+        "outputSha256": "c36d3c7dc7b2ee7a0f295b4382718b4fe1886487e63da81fb7a873e484b791d4"
+      },
+      {
+        "command": "git diff --check",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 8,
+        "outputSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ],
+    "archives": {
+      "passed": true,
+      "files": [
+        {
+          "name": "quorum-skill-0.2.2.tgz",
+          "passed": true
+        },
+        {
+          "name": "quorum-skill-0.2.2.zip",
+          "passed": true
+        }
+      ]
+    },
+    "baseline": "2026-11-20T22-20-20-083Z-abbb0ebd-fcde7063.json",
+    "changeInPassedTests": 0
+  },
+  "benchmark": null
+}

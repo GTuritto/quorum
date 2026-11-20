@@ -46,7 +46,7 @@ evidence separately from pending fresh-host acceptance.
 The [Harbor procedure](harbor.md) can execute the public tasks in isolated
 containers and preserve run artifacts. Its binary verifier checks artifact
 presence only; independent rubric assessment remains required for L4 evidence.
-The [0.2.1 candidate verification](0.2.1-release.md) records current automated
+The [0.2.1 release verification](0.2.1-release.md) records current automated
 checks separately from the historical Harbor baseline and pending comparisons.
 
 ## Versioned baseline history

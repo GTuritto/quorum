@@ -284,7 +284,7 @@ Forget the saved database decision for this project.
 Forget all Quorum memory for this project.
 ```
 
-### Global memory (0.2.0 candidate)
+### Global memory (introduced in 0.2.0)
 
 Global memory is a separate local store, off by default. Enabling it does not
 move or expose any project records. To share a decision, select its exact
@@ -431,14 +431,14 @@ npx quorum-skill
 Pin the exact release when reproducibility matters:
 
 ```sh
-npx quorum-skill@0.2.0
+npx quorum-skill@0.2.1
 ```
 
 `npx` may ask before downloading an uncached package. Put `-y` before the
 package name to suppress that npm prompt:
 
 ```sh
-npx -y quorum-skill@0.2.0 --all --dry-run
+npx -y quorum-skill@0.2.1 --all --dry-run
 ```
 
 This does not suppress Quorum's replacement confirmation. Pass Quorum's
@@ -449,13 +449,13 @@ This does not suppress Quorum's replacement confirmation. Pass Quorum's
 Download the tarball from npm into an empty working directory:
 
 ```sh
-npm pack quorum-skill@0.2.0
+npm pack quorum-skill@0.2.1
 ```
 
 On macOS or Linux:
 
 ```sh
-tar -xzf quorum-skill-0.2.0.tgz &&
+tar -xzf quorum-skill-0.2.1.tgz &&
 cd package &&
 ./install.sh
 ```
@@ -464,7 +464,7 @@ On Windows PowerShell with `tar` available, run each command after the previous
 one succeeds:
 
 ```powershell
-tar -xzf quorum-skill-0.2.0.tgz
+tar -xzf quorum-skill-0.2.1.tgz
 Set-Location .\package
 .\install.ps1
 ```
@@ -574,10 +574,10 @@ npx quorum-skill --update
 
 `--upgrade` is an exact alias. The installer performs no network request and
 does not choose a release. npm selects the package first, so this command
-applies version 0.2.0 explicitly after publication:
+applies version 0.2.1 explicitly after publication:
 
 ```sh
-npx quorum-skill@0.2.0 --update
+npx quorum-skill@0.2.1 --update
 ```
 
 An explicit update target stays absent when it is not installed:

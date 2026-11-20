@@ -7,6 +7,24 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## Unreleased
 
+## [0.2.1] - 2026-11-20
+
+### Added
+
+- Add a development-only Harbor bridge that exports the public decision-quality
+  corpus as Harbor 1.4 tasks and converts complete human assessments into the
+  existing observed-run format.
+- Document reproducible Harbor execution, independent rubric assessment, private
+  evidence handling, and the distinction between artifact completion and
+  decision quality.
+- Record the initial 12-trial Harbor host baseline with sanitized append-only
+  scores, usage, latency, cost, and explicit single-assessor limitations.
+
+### Changed
+
+- Advance public package, skill, installer, and README version declarations to
+  0.2.1. Harbor remains optional and outside the npm runtime payload.
+
 ## [0.2.0] - 2026-11-07
 
 ### Added
@@ -258,7 +276,8 @@ Release dates use UTC; npm recorded publication at 22:57:40 UTC.
 - Automated unit and integration coverage for installer behavior and payload
   integrity.
 
-[Unreleased]: https://github.com/GTuritto/quorum/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/GTuritto/quorum/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/GTuritto/quorum/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/GTuritto/quorum/compare/v0.1.86...v0.2.0
 [0.1.86]: https://github.com/GTuritto/quorum/compare/v0.1.84...v0.1.86
 [0.1.84]: https://github.com/GTuritto/quorum/compare/v0.1.83...v0.1.84

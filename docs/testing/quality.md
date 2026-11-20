@@ -43,6 +43,11 @@ The [initial baseline](quality-baseline-2026-11-06.md) records which levels
 were actually checked when this framework was introduced.
 The [0.2.0 release](0.2.0-release.md) records its helper and packed-install
 evidence separately from pending fresh-host acceptance.
+The [Harbor procedure](harbor.md) can execute the public tasks in isolated
+containers and preserve run artifacts. Its binary verifier checks artifact
+presence only; independent rubric assessment remains required for L4 evidence.
+The [0.2.1 candidate verification](0.2.1-release.md) records current automated
+checks separately from the historical Harbor baseline and pending comparisons.
 
 ## Versioned baseline history
 

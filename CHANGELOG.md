@@ -7,6 +7,29 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## Unreleased
 
+## [0.2.2] - 2026-11-20
+
+### Added
+
+- Activate bounded automatic selection for relevant decisions in projects with
+  memory on, including projects using an existing on setting.
+- Check historical candidates against current evidence and recheck the exact
+  record before dependent capture and final delivery. If capture observes
+  project memory off, rebuild from current inputs before persisting or returning
+  the decision. Report applicability, coverage, and any fallback
+  to fresh evaluation.
+- Keep global access explicit and exact-ID based, including the admission check
+  before relying on a requested global record.
+
+### Changed
+
+- Preserve schema-v1 project and global memory, including explicit project reads
+  while project memory is off.
+- Skip automatic selection for fresh evaluation, explicit Full or Super, and
+  storage-only requests. See the
+  [release verification](docs/testing/0.2.2-release.md) for coverage and host
+  observations.
+
 ## [0.2.1] - 2026-11-20
 
 ### Added
@@ -276,7 +299,8 @@ Release dates use UTC; npm recorded publication at 22:57:40 UTC.
 - Automated unit and integration coverage for installer behavior and payload
   integrity.
 
-[Unreleased]: https://github.com/GTuritto/quorum/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/GTuritto/quorum/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/GTuritto/quorum/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/GTuritto/quorum/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/GTuritto/quorum/compare/v0.1.86...v0.2.0
 [0.1.86]: https://github.com/GTuritto/quorum/compare/v0.1.84...v0.1.86

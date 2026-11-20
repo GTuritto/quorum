@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-11-20T22:35:56.971Z",
+  "suiteVersion": 1,
+  "source": {
+    "gitHead": "397859c5664f036c69d2bec56fa885b46bf63a76",
+    "dirty": true,
+    "statusAtStart": [
+      "M CHANGELOG.md",
+      " M README.md",
+      " M docs/guide.md",
+      " M docs/testing/0.2.2-smoke.md",
+      " M references/memory.sudo.md",
+      " M references/protocol.sudo.md",
+      " M scripts/deliberation-policy.mjs",
+      " M tests/protocol-contract.test.mjs",
+      " M tests/super-policy.test.mjs"
+    ],
+    "nodeVersion": "v25.9.0"
+  },
+  "qa": {
+    "passed": true,
+    "tests": {
+      "total": 251,
+      "passed": 251,
+      "failed": 0,
+      "installerIntegrationPassed": true
+    },
+    "checks": [
+      {
+        "command": "npm test",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 9247,
+        "outputSha256": "adafec9a3c2b5f1dcdc68acd6229a3541986400fb229247bd061cb79b9187212"
+      },
+      {
+        "command": "npm run benchmark:check",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 217,
+        "outputSha256": "b72169a87180316209841aaf9b36680bec1992b5eba7bca1a936060805b8c237"
+      },
+      {
+        "command": "npm run dist",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 575,
+        "outputSha256": "b111f026a06c308874d04d467f008edbf97d2960e995a0842c882697ce5e2803"
+      },
+      {
+        "command": "git diff --check",
+        "passed": true,
+        "exitCode": 0,
+        "durationMs": 13,
+        "outputSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ],
+    "archives": {
+      "passed": true,
+      "files": [
+        {
+          "name": "quorum-skill-0.2.2.tgz",
+          "passed": true
+        },
+        {
+          "name": "quorum-skill-0.2.2.zip",
+          "passed": true
+        }
+      ]
+    },
+    "baseline": "2026-11-20T22-20-20-083Z-abbb0ebd-fcde7063.json",
+    "changeInPassedTests": 3
+  },
+  "benchmark": null
+}

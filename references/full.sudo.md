@@ -19,6 +19,13 @@ Quorum {
     capacity waves => disclose if materially weakening independence
     require one valid candidate + one valid fresh independent review; otherwise fallback retaining ledger
     unverified isolation cannot satisfy minimum, even if role labels differ
+    dispatchEligibility: closed panel after synthesis => no generation, review, replacements or settings probes, even with spare cap
+    recoverCompletedPanel(priorPlan,ledger,routedTier,independentInputs):
+      retain original request cap, all attempts, phase, pending and successful slots and frozen profiles; preserve actual outcomes even when their evidence is withdrawn
+      admission = dispatchEligibility(priorPlan,ledger,phase=closed) // denies every new launch; assess current evidence independently of slot occupancy
+      use only independently supported candidates and fresh independent reviews of those retained artifacts; dependent or unverified material cannot substantiate the current synthesis
+      for Full/Super use sufficient retained evidence under the usual isolation, phase, provenance and verified slot coverage rules; insufficient Super settings with valid Full results => Full
+      otherwise synthesize at the fresh Direct/Mini route or disclose Mini/Direct fallback when Full evidence is insufficient. Return current result, original plan and actual tier; receipt retains every spent launch
     coordinator synthesizes; no extra Chairman worker
   }
 }

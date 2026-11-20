@@ -2,7 +2,7 @@
 import * as realFs from "node:fs/promises";
 import { constants } from "node:fs";
 import path from "node:path";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { globalMemoryOperation } from "./global-memory.mjs";
@@ -46,21 +46,48 @@ function validateInput(input) {
   if (input.scope !== undefined && input.scope !== "project") throw new Error("Invalid project memory scope");
   if (typeof input.projectRoot !== "string" || !path.isAbsolute(input.projectRoot)) throw new Error("Explicit absolute project root required");
   const { action, id, query, record, all, limit } = input;
-  if (!["save", "capture", "read", "forget", "on", "off", "status"].includes(action)) throw new Error("Expected save, capture, read, forget, on, off, or status");
+  if (!["save", "capture", "read", "select", "forget", "on", "off", "status"].includes(action)) throw new Error("Expected save, capture, read, select, forget, on, off, or status");
   if (id !== undefined && (typeof id !== "string" || !UUID.test(id))) throw new Error("Invalid record ID");
   if (["on", "off", "status"].includes(action)) {
     if ([id, query, record, all, limit].some((v) => v !== undefined)) throw new Error("Controls accept only a project root");
   } else if (action === "save" || action === "capture") {
     if ([id, query, all, limit].some((v) => v !== undefined)) throw new Error("Save accepts only a record");
     validateRecord(record);
-  } else if (action === "read") {
-    if (record !== undefined || all !== undefined || (id !== undefined) === (query !== undefined)) throw new Error("Read requires exactly one ID or query");
+  } else if (action === "read" || action === "select") {
+    const name = action === "read" ? "Read" : "Select";
+    const maxLimit = action === "read" ? 20 : 10;
+    if (record !== undefined || all !== undefined || (id !== undefined) === (query !== undefined)) throw new Error(`${name} requires exactly one ID or query`);
     if (query !== undefined) string(query, 256);
-    if (limit !== undefined && (!Number.isSafeInteger(limit) || limit < 1 || limit > 20)) throw new Error("Read limit must be 1..20");
+    if (limit !== undefined && (!Number.isSafeInteger(limit) || limit < 1 || limit > maxLimit)) throw new Error(`${name} limit must be 1..${maxLimit}`);
   } else if (record !== undefined || query !== undefined || limit !== undefined ||
     (all !== undefined && all !== true) || ((id !== undefined) === (all === true))) {
     throw new Error("Forget requires exactly one ID or --all");
   }
+}
+
+function boundedProjectRead(projectRoot, storedRecords, { id, query, limit = 5 }) {
+  const matches = storedRecords.filter((record) => id ? record.id.toLowerCase() === id.toLowerCase() :
+    JSON.stringify(RECORD_FIELDS.map((field) => record[field])).toLowerCase().includes(query.toLowerCase()));
+  const records = [];
+  let bytes = 0;
+  for (const record of matches) {
+    const size = Buffer.byteLength(JSON.stringify(record));
+    if (records.length >= limit || bytes + size > MAX_OUTPUT) break;
+    records.push(record);
+    bytes += size;
+  }
+  return { projectRoot, historical: true, validated: false, matched: matches.length, omitted: matches.length - records.length, records };
+}
+
+function selectionResult(projectRoot, input, enabled, storedRecords = []) {
+  const result = boundedProjectRead(projectRoot, storedRecords, input);
+  return {
+    ...result, enabled, ...(!enabled && { reason: "off" }),
+    returned: result.records.length, truncated: result.omitted > 0,
+    recordDigests: Object.fromEntries(result.records.map((record) => [
+      record.id, createHash("sha256").update(JSON.stringify(record)).digest("hex"),
+    ])),
+  };
 }
 
 // Coordinates cooperating writers. Rechecks reject observed path changes;
@@ -86,7 +113,8 @@ export async function memoryOperation(input, { fs = realFs, homeDir } = {}) {
   const dirs = [projectRoot, path.join(projectRoot, ".quorum"), path.join(projectRoot, ".quorum", "memory")];
   const dir = dirs[2], store = path.join(dir, "records.json"), lockPath = path.join(dir, ".lock"), ignorePath = path.join(dir, ".gitignore");
   const config = path.join(dirs[1], "config.json");
-  const configOperation = ["on", "off", "status", "capture"].includes(input.action);
+  const selecting = input.action === "select";
+  const configOperation = selecting || ["on", "off", "status", "capture"].includes(input.action);
   const settingMutation = ["on", "off"].includes(input.action);
   const identities = new Map();
   async function checkPaths(create = false) {
@@ -182,19 +210,15 @@ export async function memoryOperation(input, { fs = realFs, homeDir } = {}) {
     if (input.action === "status") return { projectRoot, enabled: data.enabled };
     // Off is a no-op for capture: do not open records or initialize storage.
     if (input.action === "capture" && !data.enabled) return { projectRoot, saved: false, reason: "off" };
+    if (selecting) {
+      if (!data.enabled) return selectionResult(projectRoot, input, false);
+      // A missing memory directory has no records and no lock to acquire.
+      if (!identities.has(dir)) return selectionResult(projectRoot, input, true);
+    }
   }
   if (input.action === "read") {
     const { data } = await readStore();
-    const matches = data.records.filter((record) => input.id ? record.id.toLowerCase() === input.id.toLowerCase() :
-      JSON.stringify(RECORD_FIELDS.map((field) => record[field])).toLowerCase().includes(input.query.toLowerCase()));
-    const records = [];
-    let bytes = 0;
-    for (const record of matches) {
-      const size = Buffer.byteLength(JSON.stringify(record));
-      if (records.length >= (input.limit ?? 5) || bytes + size > MAX_OUTPUT) break;
-      records.push(record); bytes += size;
-    }
-    return { projectRoot, historical: true, validated: false, matched: matches.length, omitted: matches.length - records.length, records };
+    return boundedProjectRead(projectRoot, data.records, input);
   }
   // Empty forget is side-effect free, even without the storage directory.
   if (input.action === "forget" && !await stat(store)) {
@@ -215,6 +239,12 @@ export async function memoryOperation(input, { fs = realFs, homeDir } = {}) {
     await rejectResidualWrites();
     await lock.writeFile(`${process.pid}\n`);
     // Configuration and records share the existing lock, including old save/forget clients.
+    if (selecting) {
+      const { data: currentConfig } = await readConfig();
+      if (!currentConfig.enabled) return selectionResult(projectRoot, input, false);
+      const { data } = await readStore();
+      return selectionResult(projectRoot, input, true, data.records);
+    }
     const captureConfig = input.action === "capture" ? await readConfig() : null;
     if (captureConfig && !captureConfig.data.enabled) return { projectRoot, saved: false, reason: "off" };
     if (settingMutation || captureConfig) await ensureIgnore(path.join(dirs[1], ".gitignore"), ".gitignore\n/config.json\n");
@@ -292,7 +322,7 @@ export async function memoryOperation(input, { fs = realFs, homeDir } = {}) {
 async function cli() {
   const [action, ...args] = process.argv.slice(2);
   if (action === "--help") {
-    console.log("Quorum project memory: on|off|status --project-root ABS | save|capture --project-root ABS < record.json | read --project-root ABS (--id UUID | --query TEXT) [--limit 1..20] | forget --project-root ABS (--id UUID | --all)\nGlobal memory: --scope global on|off|status | share --project-root ABS --source-id UUID --authorized [--allow-project-off] | preview|read --project-root ABS --id UUID --authorized | admit --project-root ABS --id UUID --authorized --preview-digest SHA256 | revoke --project-root ABS --id UUID | links --project-root ABS [--source-id UUID] | forget (--id UUID | --all)");
+    console.log("Quorum project memory: on|off|status --project-root ABS | save|capture --project-root ABS < record.json | read --project-root ABS (--id UUID | --query TEXT) [--limit 1..20] | select --project-root ABS (--id UUID | --query TEXT) [--limit 1..10] | forget --project-root ABS (--id UUID | --all)\nGlobal memory: --scope global on|off|status | share --project-root ABS --source-id UUID --authorized [--allow-project-off] | preview|read --project-root ABS --id UUID --authorized | admit --project-root ABS --id UUID --authorized --preview-digest SHA256 | revoke --project-root ABS --id UUID | links --project-root ABS [--source-id UUID] | forget (--id UUID | --all)");
     return;
   }
   const input = { action };

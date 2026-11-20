@@ -189,8 +189,8 @@ Role names never establish distinct-model participation.
 After reaching a decision, return to direct implementation. A compatible
 decision in the current conversation can be reused; changed evidence, goals,
 constraints, or assumptions require reassessment. An explicit full request
-starts a fresh run. Project records are retrieved only when explicitly requested; saving may also
-follow explicitly enabled project capture.
+starts a fresh run. For project decisions, the 0.2.2 candidate also checks
+bounded project history when project memory is on. See Project decision memory below.
 
 ### Super: per-agent model and effort assignments
 
@@ -271,8 +271,12 @@ and fresh-host observations, including limits on verifying effective settings.
 
 ### Project decision memory
 
-Quorum supports explicit project memory and opt-in automatic capture.
-Automatic capture is **off by default**. Ask your assistant:
+Project memory is **off by default**. Version 0.2.2 activates bounded automatic
+selection of saved local decisions for eligible tasks when project memory is
+on. Existing on settings enable selection as well as automatic capture. Fresh
+evaluation, explicit Full or Super, storage-only operations, and routine
+lookups skip automatic selection. Explicit historical reads still work while
+project memory is off.
 
 ```text
 Turn Quorum memory on for this project.
@@ -284,44 +288,35 @@ Forget the saved database decision for this project.
 Forget all Quorum memory for this project.
 ```
 
-### Global memory (introduced in 0.2.0)
-
-Global memory is a separate local store, off by default. Enabling it does not
-move or expose any project records. To share a decision, select its exact
-project record and authorize that one transfer. If project automatic capture
-is off, explicitly permit this one share; the setting stays off. In the
-destination project, request a preview and then admit that exact snapshot.
-Requested reads remain historical and unvalidated. Quorum does not automatically
-retrieve or reuse global records.
-
-```text
-Turn on Quorum global memory.
-Share the saved decision with ID <project-record-ID> from this project globally.
-Preview global decision <global-ID> for this destination project.
-Admit that previewed global decision for this project.
-Show the admitted global decision <global-ID> as historical context.
-Revoke this project's admission of global decision <global-ID>.
-Forget global decision <global-ID>.
-```
-
-Global forget removes the selected Quorum-managed snapshot and all admissions
-but leaves its source project record. Project forget removes the project record
-but leaves an explicitly shared global snapshot; ask for the linked global IDs
-when deciding whether to forget those too. A copied or renamed project does not
-silently inherit an admission. The helper stops on ambiguous identity, foreign
-storage, or lock failures. This local deletion does not erase chat history,
-exports, or other tools' copies.
-
-On persists authorization to capture meaningful final decisions and material
-changes from future Quorum runs in this project. It does not backfill earlier
-turns or record every answer. Off stops automatic capture and preserves records.
-Explicit save/retrieve/forget still works while off and never enables capture.
+Project memory on also authorizes capture of meaningful final decisions and
+material changes from future Quorum runs in this project. Off stops automatic
+selection and capture while preserving records. Earlier turns are never
+backfilled. Explicit save, retrieve, and forget still work while off and never
+enable capture.
 Forget preserves the setting, so future decisions may be captured again while on.
 A request containing an explicit memory operation does not also auto-capture.
+When the capture status or the capture itself reports off, Quorum withdraws
+automatically selected support for the rest of that decision. It reassesses
+current evidence before saving a recovery capsule or delivering the answer.
 
-Retrieval returns historical, unvalidated records; it does not make a past
-decision current advice. Automatic retrieval/reuse, global memory, and learning
-are not included. Records never authorize actions or override current requirements.
+Selection uses one nonempty task query of up to 256 characters or an exact
+project record ID. The helper returns up to five matches by default (limit
+1–10) in storage order, plus coverage and a digest per record. The coordinator
+checks relevant sources, material assumptions, uncertainty and reconsideration
+triggers against current evidence. Compatible
+records may support this decision. Changed constraints can reject a record.
+Unavailable material evidence leaves it unresolved. A known conflict outside
+the returned set can require fresh evaluation.
+
+Immediately before relying on an automatically selected record, Quorum repeats
+selection by exact record ID in the same project and checks the digest. A
+withdrawal, change or failed check means rebuilding the answer from independently
+supported current inputs. The receipt identifies the record, disposition,
+evidence, coverage, last check and any fallback. It describes that observed
+instant. Past chat and saved records retain their historical status. Records never
+grant authorization.
+See the [0.2.2 smoke procedure](testing/0.2.2-smoke.md) for observed host coverage
+and outstanding checks.
 
 The skill decides whether a final outcome qualifies, preserving uncertainty and
 unresolved dissent. The helper checks the stored setting again under its write
@@ -349,6 +344,7 @@ node /path/to/installed/quorum/references/memory.mjs status --project-root /abso
 node /path/to/installed/quorum/references/memory.mjs off --project-root /absolute/project
 node /path/to/installed/quorum/references/memory.mjs save --project-root /absolute/project < record.json
 node /path/to/installed/quorum/references/memory.mjs read --project-root /absolute/project --query database
+node /path/to/installed/quorum/references/memory.mjs select --project-root /absolute/project --query database --limit 5
 node /path/to/installed/quorum/references/memory.mjs forget --project-root /absolute/project --id SAVED_UUID
 # Only when you intend to forget every Quorum record in that project:
 node /path/to/installed/quorum/references/memory.mjs forget --project-root /absolute/project --all
@@ -386,6 +382,37 @@ verify the owning process has stopped before recovering it. Incomplete temporary
 writes also block further mutations until recovered; cleanup errors report the
 affected path and may mean the preceding operation changed data.
 
+### Global memory (introduced in 0.2.0)
+
+Global memory is a separate local store, off by default. Enabling it does not
+move or expose any project records. To share a decision, select its exact
+project record and authorize that one transfer. If project automatic capture
+is off, explicitly permit this one share; the setting stays off. In the
+destination project, request a preview and then admit that exact snapshot.
+Global access remains explicit and exact-ID based. A read returns historical,
+unvalidated context. If you ask Quorum to apply an admitted global record, it
+checks current evidence and repeats the exact authorized read to recheck
+admission before relying on the record. Quorum skips automatic global
+discovery, retrieval, and reuse.
+
+```text
+Turn on Quorum global memory.
+Share the saved decision with ID <project-record-ID> from this project globally.
+Preview global decision <global-ID> for this destination project.
+Admit that previewed global decision for this project.
+Show the admitted global decision <global-ID> as historical context.
+Revoke this project's admission of global decision <global-ID>.
+Forget global decision <global-ID>.
+```
+
+Global forget removes the selected Quorum-managed snapshot and all admissions
+but leaves its source project record. Project forget removes the project record
+but leaves an explicitly shared global snapshot; ask for the linked global IDs
+when deciding whether to forget those too. A copied or renamed project does not
+silently inherit an admission. The helper stops on ambiguous identity, foreign
+storage, or lock failures. This local deletion does not erase chat history,
+exports, or other tools' copies.
+
 ## How it works
 
 - [`SKILL.md`](../SKILL.md) defines activation, routing, safety, and output behavior.
@@ -393,13 +420,13 @@ affected path and may mean the preceding operation changed data.
 - [`references/deliberation.sudo.md`](../references/deliberation.sudo.md) loads for Mini/Full/Super.
 - [`references/full.sudo.md`](../references/full.sudo.md) loads before Full/Super capability discovery and dispatch.
 - [`references/super.sudo.md`](../references/super.sudo.md) loads only for explicit Super, with its Claude Code binding when applicable.
-- [`references/memory.sudo.md`](../references/memory.sudo.md) loads before explicit memory operations or eligible automatic capture.
+- [`references/memory.sudo.md`](../references/memory.sudo.md) loads before explicit memory operations, eligible project selection, or automatic capture.
 - [`references/codex-adapter.md`](../references/codex-adapter.md) maps the protocol to Codex capabilities.
 - [`installer/`](../installer/) contains the dependency-free installation engine and terminal selector.
 
 Ordinary Direct requests load the entry, shared core, and the Codex adapter when
 applicable. A meaningful Direct decision can still trigger the memory module for
-an opt-in settings check; a routine answer does not. Memory-only requests do not
+bounded selection before routing and an opt-in capture check after synthesis. Memory-only requests do not
 load deliberation. Missing references stop the affected feature with disclosure.
 The model's familiarity with SudoLang is not a substitute for Quorum's current rules.
 Already-loaded current references are reused within the context; compaction or a
@@ -431,14 +458,14 @@ npx quorum-skill
 Pin the exact release when reproducibility matters:
 
 ```sh
-npx quorum-skill@0.2.1
+npx quorum-skill@0.2.2
 ```
 
 `npx` may ask before downloading an uncached package. Put `-y` before the
 package name to suppress that npm prompt:
 
 ```sh
-npx -y quorum-skill@0.2.1 --all --dry-run
+npx -y quorum-skill@0.2.2 --all --dry-run
 ```
 
 This does not suppress Quorum's replacement confirmation. Pass Quorum's
@@ -449,13 +476,13 @@ This does not suppress Quorum's replacement confirmation. Pass Quorum's
 Download the tarball from npm into an empty working directory:
 
 ```sh
-npm pack quorum-skill@0.2.1
+npm pack quorum-skill@0.2.2
 ```
 
 On macOS or Linux:
 
 ```sh
-tar -xzf quorum-skill-0.2.1.tgz &&
+tar -xzf quorum-skill-0.2.2.tgz &&
 cd package &&
 ./install.sh
 ```
@@ -464,7 +491,7 @@ On Windows PowerShell with `tar` available, run each command after the previous
 one succeeds:
 
 ```powershell
-tar -xzf quorum-skill-0.2.1.tgz
+tar -xzf quorum-skill-0.2.2.tgz
 Set-Location .\package
 .\install.ps1
 ```
@@ -574,10 +601,10 @@ npx quorum-skill --update
 
 `--upgrade` is an exact alias. The installer performs no network request and
 does not choose a release. npm selects the package first, so this command
-applies version 0.2.1 explicitly after publication:
+applies version 0.2.2 explicitly after publication:
 
 ```sh
-npx quorum-skill@0.2.1 --update
+npx quorum-skill@0.2.2 --update
 ```
 
 An explicit update target stays absent when it is not installed:

@@ -1,9 +1,10 @@
+import { isDeepStrictEqual } from 'node:util';
 import { validateInference, resolveInference, profileForSlot, slotRole, inferenceReceipt } from './super-policy.mjs';
 
 /**
  * Development-only reference policy. Hosts normalize semantic inputs and enforce
  * their own restrictions; this module neither launches workers nor parses text.
- * No state survives between calls. A launch record represents one dispatch,
+ * The caller carries the plan and ledger; the module keeps no state. A launch record represents one dispatch,
  * including failed attempts. In-context repair updates that same record.
  * valid omitted means pending; valid false means a completed failed attempt.
  */
@@ -27,9 +28,13 @@ function integer(value, minimum, name) {
  * consequential, difficultToReverse, uncertain, independentValue,
  * boundedAmbiguity, exploratoryIntent, newAlternatives}; decision {available,
  * compatible, newEvidence, changedGoal, changedConstraint, changedAssumptions,
- * reconsider} from this conversation.
+ * reconsider} from this conversation. Optional second argument for post-synthesis
+ * withdrawal: {plan, launches, independentResultIds}. Supply the original
+ * request controls with the new independent task signals. IDs are current-task
+ * evidence judgments, including that a retained review covers a retained artifact.
+ * Missing evidence is excluded. Normal in-flight replacements use dispatchEligibility.
  */
-export function planDeliberation(input = {}) {
+export function planDeliberation(input = {}, completedRun) {
   const reasons = [];
   const bypass = input.directPrefix === true;
   const requestedTier = bypass ? 'direct' : (input.level ?? 'auto');
@@ -85,6 +90,40 @@ export function planDeliberation(input = {}) {
       reasons.push('No material benefit from deliberation established.');
     }
   }
+  if (completedRun) {
+    const original = completedRun.plan;
+    if (!Array.isArray(completedRun.launches) || !original || original.completedPanel ||
+        (completedRun.launches.length && !delegated(original.tier))) {
+      throw new TypeError('Recovery requires the original plan and original launch ledger');
+    }
+    if (original.requestedTier !== requestedTier || original.maxWorkers !== maxWorkers ||
+        !isDeepStrictEqual(original.targets, targets) || original.requestedExploration !== requestedExploration ||
+        !isDeepStrictEqual(original.requestedInference, requestedInference)) {
+      throw new TypeError('Recovery must retain the original request controls');
+    }
+  }
+  if (completedRun?.launches.length) {
+    const original = completedRun.plan;
+    const independentResultIds = completedRun.independentResultIds ?? [];
+    if (!Array.isArray(independentResultIds)) throw new TypeError('Independent result IDs must be an array');
+    const finished = new Set(completedRun.launches.filter(attempt => attempt.valid === true).map(attempt => attempt.id));
+    const completedPanel = {
+      plan: original,
+      launches: structuredClone(completedRun.launches),
+      independentResultIds: independentResultIds.filter(id => finished.has(id)),
+    };
+    const recovered = { ...original, tier, completedPanel, reusedDecision: false,
+      explorationActive: explorationRequested && tier !== 'direct',
+      reasons: [...original.reasons.map(reason => `Prior plan: ${reason}`), ...reasons,
+        'The completed panel is closed to dispatch; the original attempts and slots are retained.'],
+    };
+    const receipt = executionReceipt(recovered, completedPanel.launches);
+    if (receipt.tier !== tier) recovered.reasons.push(receipt.tier === 'full'
+      ? 'Retained evidence supports Full; Super settings or slot coverage are incomplete.'
+      : 'The completed panel lacks a currently supported candidate and independent review pair.');
+    recovered.tier = receipt.tier;
+    return recovered;
+  }
   const capabilities = input.capabilities ?? {};
   if (delegated(tier) && (maxWorkers < 2 || capabilities.isolatedWorkers === false || capabilities.concurrency === 0)) {
     reasons.push(maxWorkers < 2 ? 'Full requires at least two total launches; degraded to mini.' :
@@ -119,7 +158,7 @@ export function planDeliberation(input = {}) {
   };
 }
 
-function participation(plan, launches) {
+function participation(plan, launches, independentResultIds) {
   if (!Array.isArray(launches)) throw new TypeError('launches must be an array');
   if (!delegated(plan.tier) && launches.length) throw new RangeError('Direct and mini plans permit zero worker launches');
   if (launches.length > plan.maxWorkers) throw new RangeError('Worker launch cap exceeded, including failures and replacements');
@@ -138,7 +177,8 @@ function participation(plan, launches) {
     ids.add(launch.id);
     const independent = launch.role === 'candidate' ||
       (launch.fresh === true && launch.independent === true && !candidateIds.has(launch.id) && valid.candidates > 0 && index > lastCandidateIndex);
-    if (unique && launch.valid === true && launch.isolated === true && independent) {
+    const usable = !independentResultIds || independentResultIds.has(launch.id);
+    if (unique && launch.valid === true && launch.isolated === true && independent && usable) {
       valid[key]++;
       accepted.push(launch);
     }
@@ -153,6 +193,7 @@ function participation(plan, launches) {
  */
 export function dispatchEligibility(plan, launches, role, slot) {
   if (!roles.includes(role)) throw new TypeError('Worker role must be candidate or reviewer');
+  if (plan.completedPanel) return { allowed: false, reason: 'Synthesis completed; no generation or review may restart.' };
   const { launched, valid } = participation(plan, launches);
   if (!delegated(plan.tier)) return { allowed: false, reason: 'Only full or super launches workers.' };
   if (plan.tier === 'super') {
@@ -189,6 +230,13 @@ export function dispatchEligibility(plan, launches, role, slot) {
   };
 }
 
+// An in-flight context can finish after synthesis. Its ID, role and slot
+// are immutable. It was still pending when evidence was assessed for reuse.
+function sameAttempt(recorded, current) {
+  if (recorded.valid !== undefined) return isDeepStrictEqual(recorded, current);
+  return current?.id === recorded.id && current.role === recorded.role && current.slot === recorded.slot;
+}
+
 /**
  * Records are in dispatch order: {id, role, valid, isolated, fresh, independent,
  * model, modelVerified}; Super also records slot, effort/provider and their
@@ -197,7 +245,31 @@ export function dispatchEligibility(plan, launches, role, slot) {
  * options.miniAvailable=false models exhausted time/reasoning for fallback.
  */
 export function executionReceipt(plan, launches, options = {}) {
-  const { launched, valid, accepted } = participation(plan, launches);
+  const panel = plan.completedPanel;
+  if (panel && (!Array.isArray(launches) || launches.length !== panel.launches.length ||
+      panel.launches.some((recorded, i) => !sameAttempt(recorded, launches[i])))) {
+    throw new RangeError('Completed panel ledger cannot be reset, reordered or reassigned');
+  }
+  if (panel) {
+    launches = launches.map((completion, index) => {
+      const recorded = panel.launches[index];
+      if (recorded.valid !== undefined) return recorded;
+      const attempt = { ...completion };
+      for (const field of ['model', 'effort', 'provider']) {
+        const verified = `${field}Verified`;
+        if (recorded[verified] === true) {
+          attempt[field] = recorded[field];
+          attempt[verified] = true;
+        }
+      }
+      for (const field of ['isolated', 'fresh', 'independent']) {
+        if (typeof recorded[field] === 'boolean') attempt[field] = recorded[field];
+      }
+      return attempt;
+    });
+  }
+  const { launched, valid, accepted } = participation(panel?.plan ?? plan, launches,
+    panel ? new Set(panel.independentResultIds) : undefined);
   const reasons = [...plan.reasons];
   let tier = plan.tier;
   if (delegated(tier) && (!valid.candidates || !valid.reviewers)) {
@@ -218,7 +290,8 @@ export function executionReceipt(plan, launches, options = {}) {
     reasons.push('Requested exploration was not applied after direct fallback.');
   }
   if (valid.candidates !== launched.candidates || valid.reviewers !== launched.reviewers) {
-    reasons.push('Failed or invalid worker results remain included in total launches.');
+    reasons.push(panel ? 'Attempts excluded from the current synthesis remain included in total launches.'
+      : 'Failed or invalid worker results remain included in total launches.');
   }
   if (delegated(plan.tier) && (launched.candidates < plan.allocated.candidates || launched.reviewers < plan.allocated.reviewers)) {
     reasons.push(`Participation below planned ${plan.allocated.candidates}+${plan.allocated.reviewers}.`);

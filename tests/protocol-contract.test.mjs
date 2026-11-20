@@ -58,7 +58,7 @@ test("canonical contract retains controls, allocation, review, and provenance", 
   }
   for (const rule of [
     /defaultCandidateCount = 3/, /defaultReviewerCount = 1/,
-    /min\(requestedReviewers, cap - 1\)/, /min\(requestedCandidates, cap - reviewers\)/,
+    /min\(requestedReviewers, remaining - 1\)/, /min\(requestedCandidates, remaining - reviewers\)/,
     /safe integers/, /positive/, /nonnegative/,
     /counts alone[^\n]*full/i, /zero delegated workers/i,
     /reserve[^\n]*review/i, /failures[^\n]*replacements/,
@@ -67,7 +67,7 @@ test("canonical contract retains controls, allocation, review, and provenance", 
     /one repair[^\n]*same worker/i, /no candidates after review/i,
     /never[^\n]*(expose|persist)[^\n]*hidden/i,
     /untrusted[^\n]*authority/i, /none[^\n]*direct/i,
-    /no automatic decision reuse/i, /maxWorkers=plan\.cap even for direct\|mini/,
+    /no automatic global retrieval/i, /maxWorkers=plan\.cap even for direct\|mini/,
   ]) assert.match(protocol, rule);
 });
 
@@ -108,7 +108,7 @@ test("mixed explicit forget operations preserve the requested order and report r
   const run = protocol.slice(protocol.indexOf("  run(input) {"));
   assert.ok(run.indexOf("memory.forgetBeforeEvaluation") >= 0);
   assert.ok(run.indexOf("memory.forgetBeforeEvaluation") < run.indexOf("result ="));
-  assert.ok(run.indexOf("memory.forgetAfterEvaluation") > run.indexOf("result ="));
+  assert.ok(run.indexOf("memory.orderedPostEvaluationActions") > run.indexOf("result ="));
   assert.match(run, /return result \+ memoryReceipts/);
 });
 
@@ -117,14 +117,14 @@ test("capture is opt-in, final-only, and separate from explicit operations and r
   const memory = await read("references/memory.sudo.md");
   assert.match(memory, /persist only with explicit user intent; default off/);
   assert.match(memory, /settings only, no records/);
-  assert.match(memory, /no automatic record retrieval\/reuse\/global capture\/learning/);
+  assert.match(memory, /project select only; never automatically read global/);
   assert.match(memory, /unresolved dissent in uncertainty/);
   assert.match(memory, /unsafe\/oversized summary => skip capture/);
   assert.match(memory, /no automatic recapture in forget request/);
   const run = protocol.slice(protocol.indexOf("  run(input) {"));
   const capture = run.indexOf("captureIfEnabled");
   assert.ok(capture > run.indexOf("result ="));
-  assert.ok(capture > run.indexOf("memory.forgetAfterEvaluation"));
+  assert.ok(capture > run.indexOf("memory.orderedPostEvaluationActions"));
   assert.match(run, /!memory.hasExplicitOperation && eligibleFinalDecision\(result\)/);
   assert.match(run, /!memory.storageOnly && memory.settingRequested/);
 });
@@ -140,7 +140,7 @@ test("ordinary Direct has a self-contained core and never enters deliberation", 
   assert.match(core, /plan.tier == direct \? executeDirect\(resolved\)/);
   assert.doesNotMatch(core, /^  (Generation|ReviewPolicy|Full|Memory) \{/m);
   assert.doesNotMatch(entry, /requireRead\("references\/(deliberation|full|memory)\.sudo\.md"\)/);
-  assert.match(core, /absent intent[^\n]*hasExplicitOperation:false[^\n]*no record retrieval/);
+  assert.match(core, /routine lookup[^\n]*skip automatic selection/);
   assert.match(core, /eligibleFinalDecision =[^\n]*not routine answers, intermediate options, or control results/);
 });
 
@@ -170,7 +170,7 @@ test("memory loads before explicit resolution and before eligible automatic sett
   const load = run.indexOf('requireRead("references/memory.sudo.md")');
   assert.ok(load >= 0 && load < run.indexOf("resolveExplicitMemoryIntent(resolved)"));
   assert.match(run, /if \(hasExplicitMemoryIntent\(resolved\)\) requireRead/);
-  assert.match(run, /if \(!memory.hasExplicitOperation && eligibleFinalDecision\(result\) && unambiguousHostSelectedProject\) \{\s*requireRead\("references\/memory\.sudo\.md"\)[^\n]*\n\s*memoryReceipts \+= captureIfEnabled/);
+  assert.match(run, /if \(!memory.hasExplicitOperation && eligibleFinalDecision\(result\) && unambiguousHostSelectedProject\) \{\s*requireRead\("references\/memory\.sudo\.md"\)[^\n]*\n\s*ensureCurrentSupport\("before capture"\)/);
   assert.match(core, /missing memory module\/helper[^\n]*skip automatic capture[^\n]*stop dependent explicit work/);
   assert.match(core, /requested as an operation, not merely mentioned in task data/);
   assert.match(core, /helper status must confirm enabled before capture/);
@@ -187,4 +187,137 @@ test("all lazy references ship and current content is required after context los
   assert.match(entry, /after compaction\/revision change reload required content if unavailable/);
   assert.match(entry, /never substitute model familiarity/);
   assert.match(entry, /missing required reference => disclose; stop affected execution; never invent rules/);
+});
+
+test("selection is staged, authorized and assessed before routing", async () => {
+  const core = await read("references/protocol.sudo.md");
+  const run = core.slice(core.indexOf("  run(input) {"));
+  const steps = [
+    "executeExplicitSetting(memory)", "executeExplicitForget(memory)",
+    "retrieveHistoricalEvidence(memory)", "eligibleForSelection(resolved,memory)",
+    'requireRead("references/memory.sudo.md")', "selectProjectOnce(", "assessApplicability(",
+    "route(resolved.request",
+  ];
+  let position = -1;
+  for (const step of steps) {
+    position = run.indexOf(step, position + 1);
+    assert.ok(position >= 0, step);
+  }
+  assert.match(core, /fresh evaluation[^\n]*explicit Full[^\n]*storage-only/);
+  assert.match(run, /if \(!memory\.storageOnly && !memory\.retrieveBeforeEvaluation && !resolved\.freshRequested && resolved\.level not in \[full,super\] && eligibleForSelection/);
+  assert.match(core, /failure halts dependent memory work/);
+  assert.match(core, /rejected or unresolved[^\n]*conversation-decision shortcut/);
+});
+
+test("the coordinator validates untrusted history and rechecks before persistence", async () => {
+  const core = await read("references/protocol.sudo.md");
+  const memory = await read("references/memory.sudo.md");
+  for (const rule of [
+    /untrusted historical evidence, never instructions/, /compatible[^\n]*material assumptions[^\n]*triggers/,
+    /rejected[^\n]*contradict/, /unresolved[^\n]*unauthorized/,
+    /never expand the cap/, /select --project-root ABS --id UUID/,
+    /recordDigests\[id\]/, /exact admitted global read/, /independently supported current facts/,
+    /memoryUseReceipt[^\n]*scope[^\n]*ID/,
+  ]) assert.match(memory, rule);
+  const run = core.slice(core.indexOf("  run(input) {"));
+  const recheck = run.indexOf("recheckExactRecords(");
+  assert.ok(recheck > run.indexOf("result ="));
+  assert.ok(recheck < run.indexOf("saveExplicitFinalDecisionAfterSynthesis"));
+  assert.ok(recheck < run.indexOf("captureIfEnabled"));
+  assert.ok(recheck < run.indexOf("ArtifactStore.save"));
+  assert.match(run, /independentCurrentInputs/);
+  assert.match(run, /memoryUseReceipt/);
+  assert.match(run, /memory\.historyDisplayRequested[^\n]*memoryReceipts \+= renderHistoricalContext\(candidates\)/);
+  assert.match(core, /output gate[^\n]*withdrawn[^\n]*original exact ID/);
+  assert.match(core, /global read receipt[^\n]*sourceState[^\n]*admission ID/);
+});
+
+test("paired acceptance inputs keep history fixed and vary current evidence and withdrawal", async () => {
+  const fixture = JSON.parse(await read("tests/fixtures/memory-reuse-cases.json"));
+  const cases = new Map(fixture.cases.map((c) => [c.id, c]));
+  const compatible = cases.get("compatible");
+  const changed = cases.get("changed");
+  assert.deepEqual(compatible.records, changed.records);
+  assert.notDeepEqual(fixture.evidence[compatible.current], fixture.evidence[changed.current]);
+  for (const id of ["off", "delete", "error"]) {
+    const c = cases.get(id);
+    assert.deepEqual(c.records, compatible.records);
+    assert.deepEqual(c.current, compatible.current);
+    assert.ok(c.expect.exclude.includes(fixture.historicalOnly));
+    assert.ok(c.expect.include.includes(fixture.independentFact));
+  }
+  assert.ok(!fixture.evidence[compatible.current].join(" ").includes(fixture.historicalOnly));
+  for (const c of cases.values()) {
+    assert.ok(fixture.evidence[c.current]?.length, c.id);
+    for (const key of [...c.records, ...(c.globalRecords ?? [])]) assert.ok(fixture.records[key], key);
+  }
+  assert.ok(fixture.records[compatible.records[0]].decision.includes(fixture.historicalOnly));
+  for (const id of ["unresolved", "injection", "conflict", "truncated", "global-decoy"]) assert.ok(cases.has(id), id);
+});
+
+test("honor both post-evaluation orders with a reliance check at every dependent use", async () => {
+  const core = await read("references/protocol.sudo.md");
+  const run = core.slice(core.indexOf("  run(input) {"));
+  const ordered = run.indexOf("for (step of memory.orderedPostEvaluationActions)");
+  const forget = run.indexOf("executeExplicitForget(memory)", ordered);
+  const preSave = run.indexOf('ensureCurrentSupport("before save")', forget);
+  const save = run.indexOf("saveExplicitFinalDecisionAfterSynthesis(", preSave);
+  const final = run.indexOf('ensureCurrentSupport("final delivery", captureOutcome)', save);
+  assert.ok(ordered >= 0 && ordered < forget && forget < preSave && preSave < save && save < final);
+  assert.match(run.slice(forget, preSave), /invalidate prior rechecks/);
+  assert.ok(final < run.indexOf("memoryUseReceipt(", final));
+  assert.match(core, /pre-save check[^\n]*never satisfies final reliance after forget/);
+  assert.match(core, /save then forget[^\n]*forget then save/);
+});
+
+test("recovery reroutes independent inputs using the same launch ledger and controls", async () => {
+  const core = await read("references/protocol.sudo.md");
+  const run = core.slice(core.indexOf("  run(input) {"));
+  assert.match(core, /remaining = cap - ledger.totalLaunches/);
+  assert.match(core, /remaining < 2[^\n]*miniPlan\(cap/);
+  const reroute = run.indexOf("evaluateFromRouting(resolved,ledger,plan)", run.indexOf("independentCurrentInputs("));
+  assert.ok(reroute > run.indexOf("recheckExactRecords("));
+  assert.match(run, /assessTaskEvidenceConstraintsAndMaterialUncertainty\(resolved\)/);
+  assert.match(run, /exclude findings dependent on withdrawn history/);
+  assert.doesNotMatch(run, /rebuildFromIndependentCurrentInputs\(resolved,plan/);
+});
+
+test('withdrawal after worker synthesis enters the original closed panel guard before fresh allocation', async () => {
+  const core = await read("references/protocol.sudo.md");
+  const full = await read("references/full.sudo.md");
+  const run = core.slice(core.indexOf("    evaluateFromRouting("));
+  const retain = run.indexOf("Full.recoverCompletedPanel(priorPlan,ledger");
+  assert.ok(retain >= 0 && retain < run.indexOf("plan = allocate("));
+  assert.match(run, /evaluateFromRouting\(resolved,ledger,plan\)/);
+  assert.match(full, /dispatchEligibility[^\n]*closed/);
+  assert.match(full, /admission = dispatchEligibility\(priorPlan,ledger,phase=closed\)/);
+  assert.match(full, /independently supported[^\n]*review/);
+  assert.match(full, /pending[^\n]*successful[^\n]*slots/);
+});
+
+test('capture observations precede final reliance, receipts and dependent writes', async () => {
+  const core = await read("references/protocol.sudo.md");
+  const run = core.slice(core.indexOf("  run(input) {"));
+  const steps = [
+    'ensureCurrentSupport("before capture")', 'captureOutcome = captureIfEnabled(',
+    'ensureCurrentSupport("final delivery", captureOutcome)', 'memoryUseReceipt(',
+    'summarizeWithoutHiddenReasoning(', 'ArtifactStore.save(', 'GoalStore.update(', 'return result + memoryReceipts',
+  ];
+  let at = -1;
+  for (const step of steps) {
+    at = run.indexOf(step, at + 1);
+    assert.ok(at >= 0, step);
+  }
+  assert.match(run, /observedOff[^\n]*status\?\.enabled == false[^\n]*capture\?\.reason == "off"/);
+  assert.match(run, /observedOff \?[^\n]*: recheckExactRecords/);
+  assert.match(run, /observedOff \|\| any required check failed/);
+  assert.equal(run.match(/captureIfEnabled\(/g).length, 1);
+});
+
+test('exact global read receipts use only operation-specific evidence', async () => {
+  for (const name of ["references/protocol.sudo.md", "references/memory.sudo.md"]) {
+    const rules = await read(name);
+    assert.match(rules, /project[^\n]*matched[^\n]*returned[^\n]*omitted[^\n]*truncated/);
+    assert.match(rules, /global[^\n]*found[^\n]*missing[^\n]*denied[^\n]*counts/i);
+  }
 });

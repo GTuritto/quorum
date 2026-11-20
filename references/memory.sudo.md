@@ -44,7 +44,7 @@ Quorum {
       requested global use: repeat exact admitted global read under original authorization; require found, same ID, digest, destination and admission ID; reassess sourceState
       off on automatic path, gone, changed, revoked, insufficient material evidence, lock/helper error or unavailable recheck => withdraw historical support
       rebuild decision from independent current inputs, excluding historical-only details even in the receipt; retain independently supported current facts
-      no extra launches beyond existing cap; disclose any degraded review. Recheck observes one instant, never promises continuous validity or erases chat history
+      reroute independent current inputs under original controls before resynthesis; retain prior launches, charge fresh work to the remaining cap; disclose any degraded review. Recheck observes one instant, never promises continuous validity or erases chat history
     memoryUseReceipt: report matched, returned, omitted/truncated, scope and exact ID, task-local disposition/reason, current evidence checked, final check and actual fresh fallback
       report off/empty/error truthfully, no fabricated comparisons or verification; omit unnecessary private content. Helper success proves retrieval alone
     forget: node helper forget --project-root ABS (--id UUID | --all)
@@ -69,6 +69,9 @@ Quorum {
       links: node helper links --scope global --project-root SOURCE [--source-id UUID]; metadata-only survivor check, including while global off
       identity mismatch, malformed store, lock, unavailable source or helper failure => stop affected action and disclose; never guess scope or hand-write data
     mixed operations: resolve order before execution; on/off before dependent work; failure halts dependent memory actions
+      schedule each post-evaluation save or forget exactly once in the user’s order. Check historical support immediately before a dependent save and at final reliance, including after a later forget.
+      save followed by forget-all: after the forget receipt, re-read each originally relied-on ID for final delivery even when the helper already counted it as forgotten. Remove withdrawn conclusions and historical-only details from the recommendation and action receipt.
+      never resave after a requested final forget. If forget precedes save, rebuild a dependent decision after withdrawal before saving it.
     confirm project + actual helper outcome/ID; distinguish saved, skipped-off, skipped-duplicate, failed; never echo private record content unnecessarily
     storageOnly => direct, operations once, common output gate; helper output alone is not final
   }

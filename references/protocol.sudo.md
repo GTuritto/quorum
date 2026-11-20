@@ -96,15 +96,16 @@ Quorum {
     return direct
     // explicit full is always fresh; complexity/duration alone never require full; return to direct after decision
   }
-  allocate(input, tier) {
+  allocate(input, tier, ledger) {
     requestedCandidates = candidates ?? defaultCandidateCount
     requestedReviewers = reviewers ?? defaultReviewerCount
     cap = maxWorkers ?? (anyExplicitCounts ? requestedCandidates+requestedReviewers : defaultMaxWorkers)
     if (tier not in [full,super]) return zeroWorkerPlan(tier, cap)
     // Full module is required before capability discovery; never probe by launching workers
-    if (cap < 2 || !isolatedWorkersAvailable) return miniPlan(cap, disclosedReason)
-    reviewers = min(requestedReviewers, cap - 1)
-    candidates = min(requestedCandidates, cap - reviewers)
+    remaining = cap - ledger.totalLaunches // original request cap; all prior attempts still count
+    if (remaining < 2 || !isolatedWorkersAvailable) return miniPlan(cap, disclosedReason)
+    reviewers = min(requestedReviewers, remaining - 1)
+    candidates = min(requestedCandidates, remaining - reviewers)
     disclose reductions; candidates==1 => disclose limited independent alternative generation
     // no fixed upper panel size beyond targets, cap, host limits; cap never enlarges targets
     return FullPlan(candidates, reviewers, cap, tier)
@@ -128,6 +129,7 @@ Quorum {
     full->mini retains applied exploration; final direct => false; option count never implies model/worker diversity
     output gate before final answer, including storageOnly: require concise receipt fields, never omit for brevity or early stop after helper
     memory-use output gate: for each candidate, including withdrawn records, print original exact ID and scope, disposition and material reason, evidence checked, final helper outcome and actual fallback; report matched/returned/omitted/truncated once. Never repeat a withdrawn claim or label. Verify fields in the final answer.
+    pre-save check never satisfies final reliance after forget: require a new exact-ID helper call after the last forget before reporting a dependent recommendation
     global read receipt: include initial source scope and sourceState, destination, global ID and admission ID when returned; if a final read was denied say so without inventing new source/admission data
     compact receipt: requestedTier->tier; launchedCandidates+launchedReviewers=totalLaunches; maxWorkers; modelProvenance; explorationApplied; reductions/fallback if any
     render resolved enum/numeric values, never variable names/placeholders; requestedTier=user's requested level or auto, not inferred actual tier
@@ -153,6 +155,7 @@ Quorum {
     if (hasExplicitMemoryIntent(resolved)) requireRead("references/memory.sudo.md")
     memory = hasExplicitMemoryIntent(resolved) ? resolveExplicitMemoryIntent(resolved) : {hasExplicitOperation:false, storageOnly:false}
     // MemoryGate governs eligibility; Memory module resolves explicit scope/order before dependent work
+    // orderedPostEvaluationActions preserves the user’s save then forget or forget then save order; storageOnly has no post-actions.
     memoryReceipts = []; candidates = []; reliance = []; checks = []
     if (!memory.storageOnly && memory.settingRequested) memoryReceipts += executeExplicitSetting(memory)
     if (!memory.storageOnly && memory.forgetBeforeEvaluation) memoryReceipts += executeExplicitForget(memory) // halt dependent work on failure
@@ -168,26 +171,47 @@ Quorum {
       reliance = assessApplicability(candidates, resolved.currentEvidence, Authority) // use Memory rules before routing
       resolved.context += onlyCompatibleSupport(reliance) // keep other dispositions for receipt only
     }
-    effort = ReasoningPolicy?.chooseEffort(resolved) ?? permittedCurrentEffort
-    signals = assessTaskEvidenceConstraintsAndMaterialUncertainty(resolved.request)
-    resolved.explorationActive = resolveExploration(resolved,signals)
-    selectedTier = memory.storageOnly ? direct : route(resolved.request,signals,resolved.explorationActive)
-    if (selectedTier == direct) resolved.explorationActive=false
-    if (selectedTier in [mini,full,super]) requireRead("references/deliberation.sudo.md")
-    if (selectedTier in [full,super]) requireRead("references/full.sudo.md") // before capability discovery/allocation/dispatch
-    plan = allocate(resolved,selectedTier)
-    if (input.level == super) plan.inference = Super.prepare(plan,input,runtimeCapabilities) // before any worker dispatch
-    result = memory.storageOnly ? executeMemory(memory)
-      : plan.tier == direct ? executeDirect(resolved) // no feature-module symbols or worker dispatch
-      : execute(plan, Generation, Anonymize, ReviewPolicy, plan.tier in [full,super] ? Full : none, Synthesis, Failure)
-    // executeDirect still follows Authority, Goals, Decision, Recovery, MemoryGate and ProvenanceReceipt
-    if (!memory.storageOnly && memory.forgetAfterEvaluation) memoryReceipts += executeExplicitForget(memory)
-    if (any historical support influenced routing, reasoning or result) {
-      checks = recheckExactRecords(reliance, Memory) // after synthesis/withdrawals, before using or persisting any dependent decision
-      if (any required check failed) result = rebuildFromIndependentCurrentInputs(resolved,plan,ledger) // strip historical context and dependent claims; preserve launch accounting
+    ledger = appendOnlyLaunchLedgerForThisRequest // initialize once, including zero-launch tiers
+    evaluateFromRouting(resolved,ledger) {
+      effort = ReasoningPolicy?.chooseEffort(resolved) ?? permittedCurrentEffort
+      signals = assessTaskEvidenceConstraintsAndMaterialUncertainty(resolved)
+      resolved.explorationActive = resolveExploration(resolved,signals)
+      selectedTier = memory.storageOnly ? direct : route(resolved.request,signals,resolved.explorationActive)
+      if (selectedTier == direct) resolved.explorationActive=false
+      if (selectedTier in [mini,full,super]) requireRead("references/deliberation.sudo.md")
+      if (selectedTier in [full,super]) requireRead("references/full.sudo.md") // before capability discovery/allocation/dispatch
+      plan = allocate(resolved,selectedTier,ledger)
+      if (input.level == super) plan.inference = Super.prepare(plan,input,runtimeCapabilities) // before any worker dispatch
+      result = memory.storageOnly ? executeMemory(memory)
+        : plan.tier == direct ? executeDirect(resolved) // no feature-module symbols or worker dispatch
+        : execute(plan, Generation, Anonymize, ReviewPolicy, plan.tier in [full,super] ? Full : none, Synthesis, Failure)
+      return result, plan, actualTierAfterExecution
     }
+    result, plan, finalTier = evaluateFromRouting(resolved,ledger)
+    // executeDirect still follows Authority, Goals, Decision, Recovery, MemoryGate and ProvenanceReceipt
+    ensureCurrentSupport(boundary) { // updates the current result, plan, finalTier and check receipts in this run
+      if (no history influenced the current route or decision, or already rebuilt independently) return
+      check = recheckExactRecords(reliance, Memory); checks += {boundary,check}
+      if (any required check failed) {
+        resolved = independentCurrentInputs(resolved) // retain original requested controls and authorized current facts; discard all historical support and dependent signals
+        markWithdrawn(reliance,check) // preserve original IDs, assessments and receipts
+        result, plan, finalTier = evaluateFromRouting(resolved,ledger)
+        // Recompute signals, exploration, route and allocation. Never replay memory operations. Keep every prior launch and exclude findings dependent on withdrawn history from the new synthesis.
+        disclose initial and fresh routes, actual tier and any fallback under the remaining launch budget
+      }
+    }
+    for (step of memory.orderedPostEvaluationActions) { // empty for no explicit post-actions
+      if (step == forget) {
+        memoryReceipts += executeExplicitForget(memory) // halt dependent operations on failure
+        invalidate prior rechecks; retain original relied-on IDs for the next check even if forget removed them all
+      }
+      if (step == save) {
+        ensureCurrentSupport("before save")
+        memoryReceipts += saveExplicitFinalDecisionAfterSynthesis(result,memory)
+      }
+    }
+    ensureCurrentSupport("final delivery") // required after all explicit mutations, before capture/persistence/user output
     if (selection or applicable explicit retrieval attempted) memoryReceipts += memoryUseReceipt(candidates,reliance,checks) // include failures and fresh fallback
-    if (!memory.storageOnly && memory.saveRequested) memoryReceipts += saveExplicitFinalDecisionAfterSynthesis(result,memory)
     if (!memory.hasExplicitOperation && eligibleFinalDecision(result) && unambiguousHostSelectedProject) {
       requireRead("references/memory.sudo.md") // before settings lookup; missing module skips capture with disclosure
       memoryReceipts += captureIfEnabled(result,resolved,Memory)

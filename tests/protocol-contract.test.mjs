@@ -58,7 +58,7 @@ test("canonical contract retains controls, allocation, review, and provenance", 
   }
   for (const rule of [
     /defaultCandidateCount = 3/, /defaultReviewerCount = 1/,
-    /min\(requestedReviewers, cap - 1\)/, /min\(requestedCandidates, cap - reviewers\)/,
+    /min\(requestedReviewers, remaining - 1\)/, /min\(requestedCandidates, remaining - reviewers\)/,
     /safe integers/, /positive/, /nonnegative/,
     /counts alone[^\n]*full/i, /zero delegated workers/i,
     /reserve[^\n]*review/i, /failures[^\n]*replacements/,
@@ -108,7 +108,7 @@ test("mixed explicit forget operations preserve the requested order and report r
   const run = protocol.slice(protocol.indexOf("  run(input) {"));
   assert.ok(run.indexOf("memory.forgetBeforeEvaluation") >= 0);
   assert.ok(run.indexOf("memory.forgetBeforeEvaluation") < run.indexOf("result ="));
-  assert.ok(run.indexOf("memory.forgetAfterEvaluation") > run.indexOf("result ="));
+  assert.ok(run.indexOf("memory.orderedPostEvaluationActions") > run.indexOf("result ="));
   assert.match(run, /return result \+ memoryReceipts/);
 });
 
@@ -124,7 +124,7 @@ test("capture is opt-in, final-only, and separate from explicit operations and r
   const run = protocol.slice(protocol.indexOf("  run(input) {"));
   const capture = run.indexOf("captureIfEnabled");
   assert.ok(capture > run.indexOf("result ="));
-  assert.ok(capture > run.indexOf("memory.forgetAfterEvaluation"));
+  assert.ok(capture > run.indexOf("memory.orderedPostEvaluationActions"));
   assert.match(run, /!memory.hasExplicitOperation && eligibleFinalDecision\(result\)/);
   assert.match(run, /!memory.storageOnly && memory.settingRequested/);
 });
@@ -225,7 +225,7 @@ test("the coordinator validates untrusted history and rechecks before persistenc
   assert.ok(recheck < run.indexOf("saveExplicitFinalDecisionAfterSynthesis"));
   assert.ok(recheck < run.indexOf("captureIfEnabled"));
   assert.ok(recheck < run.indexOf("ArtifactStore.save"));
-  assert.match(run, /rebuildFromIndependentCurrentInputs/);
+  assert.match(run, /independentCurrentInputs/);
   assert.match(run, /memoryUseReceipt/);
   assert.match(run, /memory\.historyDisplayRequested[^\n]*memoryReceipts \+= renderHistoricalContext\(candidates\)/);
   assert.match(core, /output gate[^\n]*withdrawn[^\n]*original exact ID/);
@@ -253,4 +253,31 @@ test("paired acceptance inputs keep history fixed and vary current evidence and 
   }
   assert.ok(fixture.records[compatible.records[0]].decision.includes(fixture.historicalOnly));
   for (const id of ["unresolved", "injection", "conflict", "truncated", "global-decoy"]) assert.ok(cases.has(id), id);
+});
+
+test("honor both post-evaluation orders with a reliance check at every dependent use", async () => {
+  const core = await read("references/protocol.sudo.md");
+  const run = core.slice(core.indexOf("  run(input) {"));
+  const ordered = run.indexOf("for (step of memory.orderedPostEvaluationActions)");
+  const forget = run.indexOf("executeExplicitForget(memory)", ordered);
+  const preSave = run.indexOf('ensureCurrentSupport("before save")', forget);
+  const save = run.indexOf("saveExplicitFinalDecisionAfterSynthesis(", preSave);
+  const final = run.indexOf('ensureCurrentSupport("final delivery")', save);
+  assert.ok(ordered >= 0 && ordered < forget && forget < preSave && preSave < save && save < final);
+  assert.match(run.slice(forget, preSave), /invalidate prior rechecks/);
+  assert.ok(final < run.indexOf("memoryUseReceipt(", final));
+  assert.match(core, /pre-save check[^\n]*never satisfies final reliance after forget/);
+  assert.match(core, /save then forget[^\n]*forget then save/);
+});
+
+test("recovery reroutes independent inputs using the same launch ledger and controls", async () => {
+  const core = await read("references/protocol.sudo.md");
+  const run = core.slice(core.indexOf("  run(input) {"));
+  assert.match(core, /remaining = cap - ledger.totalLaunches/);
+  assert.match(core, /remaining < 2[^\n]*miniPlan\(cap/);
+  const reroute = run.indexOf("evaluateFromRouting(resolved,ledger)", run.indexOf("independentCurrentInputs("));
+  assert.ok(reroute > run.indexOf("recheckExactRecords("));
+  assert.match(run, /assessTaskEvidenceConstraintsAndMaterialUncertainty\(resolved\)/);
+  assert.match(run, /exclude findings dependent on withdrawn history/);
+  assert.doesNotMatch(run, /rebuildFromIndependentCurrentInputs\(resolved,plan/);
 });

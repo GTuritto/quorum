@@ -99,6 +99,22 @@
           "basis": "confirmed"
         }
       ]
+    },
+    "standingPreference": {
+      "decision": "Lantern pilot. The standing team preference is the quick-onboarding option in approved playbook JUNIPER-47.",
+      "assumptions": [
+        "Both options remain feasible and the team still honors an approved standing preference when recorded."
+      ],
+      "uncertainty": [],
+      "sources": [
+        "current.md"
+      ],
+      "reconsideration": [
+        {
+          "text": "Reopen if the two options cease to be feasible or standing preferences expire.",
+          "basis": "confirmed"
+        }
+      ]
     }
   },
   "evidence": {
@@ -119,6 +135,10 @@
       "Lantern permits a eight-hour pilot window. The staged pilot needs six hours. The brief pilot needs two hours. The signed staged playbook and its existing label remain approved whenever the staged pilot fits.",
       "The next review slot is TUESDAY-1400.",
       "The program is under a rehearsal freeze."
+    ],
+    "independentTradeoff": [
+      "The Lantern pilot has two fully feasible, reversible options: quick onboarding or easier auditing. Both have equal cost and delivery time. A signed standing team preference, if available, remains authorized and settles the choice. This file supplies no preference or label. Without an applicable preference, onboarding and auditing both matter and their relative priority is unsettled.",
+      "The next review slot is TUESDAY-1400."
     ]
   },
   "cases": [
@@ -528,6 +548,68 @@
           "brief"
         ],
         "exclude": []
+      }
+    },
+    {
+      "id": "save-then-forget",
+      "records": [
+        "pilot"
+      ],
+      "current": "eightHours",
+      "operations": [
+        "save",
+        "forget"
+      ],
+      "expect": {
+        "disposition": "withdrawn after forget; user-ordered operations exactly once",
+        "finalStoredRecords": 0,
+        "include": [
+          "TUESDAY-1400"
+        ],
+        "exclude": [
+          "JUNIPER-47"
+        ]
+      }
+    },
+    {
+      "id": "forget-then-save",
+      "records": [
+        "pilot"
+      ],
+      "current": "eightHours",
+      "operations": [
+        "forget",
+        "save"
+      ],
+      "expect": {
+        "disposition": "withdrawn after forget; user-ordered operations exactly once",
+        "finalStoredRecords": 1,
+        "include": [
+          "TUESDAY-1400"
+        ],
+        "exclude": [
+          "JUNIPER-47"
+        ]
+      }
+    },
+    {
+      "id": "auto-reroute",
+      "records": [
+        "standingPreference"
+      ],
+      "current": "independentTradeoff",
+      "checkpoint": "off after provisional route",
+      "expect": {
+        "disposition": "withdrawn; reroute based on independently unresolved priorities",
+        "initialTier": "direct",
+        "finalTier": "mini",
+        "launches": 0,
+        "include": [
+          "TUESDAY-1400"
+        ],
+        "exclude": [
+          "JUNIPER-47"
+        ]
       }
     }
   ]

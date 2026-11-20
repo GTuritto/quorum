@@ -92,15 +92,15 @@ A reference mentioned in text is not proof that its content was read.
 | --- | --- |
 | `Direct: What is 2 + 2?`, including invalid unused controls | Entry/core only, plus Codex adapter on Codex. No deliberation/full/memory reads, no settings lookup, no workers; correct Direct receipt. |
 | Explicit `level=direct` with invalid controls | Validate and clarify, without loading deliberation or silently applying the prefix bypass. |
-| Mini comparison, with and without exploration | Deliberation loads before generation/review. Full does not load; zero workers and internal-simulation provenance. Memory only for eligible final decisions. |
+| Mini comparison, with and without exploration | Deliberation loads before generation/review. Full does not load; zero workers and internal-simulation provenance. Memory loads before eligible project selection or final capture. |
 | Full 1 candidate + 1 reviewer | Deliberation and Full load before capability discovery/allocation/dispatch; isolated generation, anonymized independent review, correct receipt. |
 | Full with cap=1 or unavailable isolation | Full rules load before checking capabilities, disclosed Mini fallback, zero launches; requested tier and cap retained. |
 | Failed launch followed by fallback | Preserve failed attempts and reserved review budget; no false zero-launch receipt. |
 | Direct memory status/read/save/forget | Memory loads before scope/order resolution or helper use. No deliberation; explicit operations work while off, helper output plus receipt. |
 | On/off with a decision, or forget before/after a decision | Correct operation order, execute each once, no automatic recapture on any explicit memory request. |
 | Routine answer while capture is enabled | No memory module or settings lookup in a fresh context; no capture. |
-| Meaningful Direct decision with capture off/on | Memory loads before settings lookup; off creates no record, on captures once; no automatic record retrieval. |
-| Ambiguous project | Skip automatic capture without guessing ancestors. Explicit memory work loads its rules and clarifies scope before helper use. |
+| Meaningful Direct decision with capture off/on | In 0.2.2, load memory before bounded project select. Off returns no content. On validates candidates before routing and rechecks any reliance before eligible capture. |
+| Ambiguous project | Skip automatic selection and capture without guessing ancestors. Explicit memory work loads its rules and clarifies scope before helper use. |
 | Missing core/adapter | Stop affected execution and disclose; never reconstruct rules from model familiarity. |
 | Missing deliberation/Full module | Ordinary Direct still works. Requested affected feature stops with disclosure; no successful Mini/Full claim or unauthorized dispatch. |
 | Missing memory module/helper | Ordinary answers remain possible; disclose skipped automatic capture, stop dependent explicit memory work, never hand-write storage or claim success. |
@@ -110,3 +110,11 @@ A reference mentioned in text is not proof that its content was read.
 No fresh-host smoke or end-to-end latency evidence was claimed by 0.1.81.
 The 0.1.82 [host follow-up](super-inference-smoke.md#fresh-host-observations)
 records bounded live tests, a stricter entry instruction and remaining failures.
+
+### Candidate 0.2.2 memory gate
+
+Run the [paired decisions and withdrawal trials](0.2.2-smoke.md) on the
+source-built candidate. Observe memory-module reads before select, actual
+current evidence reads, and the final exact-ID call on compatible reliance.
+Fresh, explicit Full and storage-only cases skip automatic selection.
+The historical token totals above have not been remeasured for this candidate.

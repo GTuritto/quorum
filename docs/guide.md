@@ -189,8 +189,8 @@ Role names never establish distinct-model participation.
 After reaching a decision, return to direct implementation. A compatible
 decision in the current conversation can be reused; changed evidence, goals,
 constraints, or assumptions require reassessment. An explicit full request
-starts a fresh run. Project records are retrieved only when explicitly requested; saving may also
-follow explicitly enabled project capture.
+starts a fresh run. For project decisions, the 0.2.2 candidate also checks
+bounded project history when project memory is on. See Project decision memory below.
 
 ### Super: per-agent model and effort assignments
 
@@ -271,8 +271,11 @@ and fresh-host observations, including limits on verifying effective settings.
 
 ### Project decision memory
 
-Quorum supports explicit project memory and opt-in automatic capture.
-Automatic capture is **off by default**. Ask your assistant:
+Project memory is **off by default**. In the 0.2.2 candidate, turning it on
+authorizes bounded project selection on relevant decisions as well as automatic
+capture. Existing on settings have the same effect. A request for fresh
+evaluation skips automatic selection, as do storage-only operations and routine
+lookups. Explicit reads still work while off. You can use the following requests.
 
 ```text
 Turn Quorum memory on for this project.
@@ -312,16 +315,30 @@ silently inherit an admission. The helper stops on ambiguous identity, foreign
 storage, or lock failures. This local deletion does not erase chat history,
 exports, or other tools' copies.
 
-On persists authorization to capture meaningful final decisions and material
-changes from future Quorum runs in this project. It does not backfill earlier
-turns or record every answer. Off stops automatic capture and preserves records.
+On also authorizes capture of meaningful final decisions and material changes
+from future Quorum runs in this project. Off stops automatic selection and
+capture while preserving records. Earlier turns are never backfilled.
 Explicit save/retrieve/forget still works while off and never enables capture.
 Forget preserves the setting, so future decisions may be captured again while on.
 A request containing an explicit memory operation does not also auto-capture.
 
-Retrieval returns historical, unvalidated records; it does not make a past
-decision current advice. Automatic retrieval/reuse, global memory, and learning
-are not included. Records never authorize actions or override current requirements.
+Selection uses one task term or exact project ID. The helper returns up to
+five matches by default (limit 1–10) in storage order, plus coverage and a
+digest per record. The coordinator checks relevant sources, material assumptions,
+uncertainty and reconsideration triggers against current evidence. Compatible
+records may support this decision. Changed constraints can reject a record.
+Unavailable material evidence leaves it unresolved. A known conflict outside
+the returned set can require fresh evaluation.
+
+Immediately before relying on an automatically selected record, Quorum repeats
+selection by exact project ID and checks the digest. A withdrawal, change or
+failed check means rebuilding the answer from independently supported current
+inputs. The receipt identifies the record, disposition, evidence, coverage,
+last check and any fallback. It describes that observed instant. Past chat and
+saved records retain their historical status. An explicitly requested admitted
+global record requires an exact authorized read and admission recheck. Records
+never grant authorization. See the [candidate smoke procedure](testing/0.2.2-smoke.md)
+for observed host coverage and outstanding checks.
 
 The skill decides whether a final outcome qualifies, preserving uncertainty and
 unresolved dissent. The helper checks the stored setting again under its write
@@ -349,6 +366,7 @@ node /path/to/installed/quorum/references/memory.mjs status --project-root /abso
 node /path/to/installed/quorum/references/memory.mjs off --project-root /absolute/project
 node /path/to/installed/quorum/references/memory.mjs save --project-root /absolute/project < record.json
 node /path/to/installed/quorum/references/memory.mjs read --project-root /absolute/project --query database
+node /path/to/installed/quorum/references/memory.mjs select --project-root /absolute/project --query database --limit 5
 node /path/to/installed/quorum/references/memory.mjs forget --project-root /absolute/project --id SAVED_UUID
 # Only when you intend to forget every Quorum record in that project:
 node /path/to/installed/quorum/references/memory.mjs forget --project-root /absolute/project --all
@@ -393,13 +411,13 @@ affected path and may mean the preceding operation changed data.
 - [`references/deliberation.sudo.md`](../references/deliberation.sudo.md) loads for Mini/Full/Super.
 - [`references/full.sudo.md`](../references/full.sudo.md) loads before Full/Super capability discovery and dispatch.
 - [`references/super.sudo.md`](../references/super.sudo.md) loads only for explicit Super, with its Claude Code binding when applicable.
-- [`references/memory.sudo.md`](../references/memory.sudo.md) loads before explicit memory operations or eligible automatic capture.
+- [`references/memory.sudo.md`](../references/memory.sudo.md) loads before explicit memory operations, eligible project selection, or automatic capture.
 - [`references/codex-adapter.md`](../references/codex-adapter.md) maps the protocol to Codex capabilities.
 - [`installer/`](../installer/) contains the dependency-free installation engine and terminal selector.
 
 Ordinary Direct requests load the entry, shared core, and the Codex adapter when
 applicable. A meaningful Direct decision can still trigger the memory module for
-an opt-in settings check; a routine answer does not. Memory-only requests do not
+bounded selection before routing and an opt-in capture check after synthesis. Memory-only requests do not
 load deliberation. Missing references stop the affected feature with disclosure.
 The model's familiarity with SudoLang is not a substitute for Quorum's current rules.
 Already-loaded current references are reused within the context; compaction or a

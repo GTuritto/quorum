@@ -21,6 +21,7 @@ Quorum {
       save requires explicit intent, works while off; one-time save/read never enables capture; corrections append, never rewrite history
       capture only finalized meaningful decision/material change from this Quorum run, never routine answers/intermediate options/control results
       automatic: eligible + unambiguous project => status; enabled => capture once; no explicit memory operation in same request
+      return actual status and capture outcomes to the core. Status enabled=false or capture reason=off withdraws automatic support for this decision even if later re-enabled. Never replay capture during recovery
       helper rechecks enablement under shared lock; exact latest-payload duplicate => skip; any changed field => append
       preserve full payload for dedup; no semantic equivalence claims; no new goal/worker/tool authorization
     retrieve: node helper read --project-root ABS (--id UUID | --query TEXT) [--limit 1..20]
@@ -45,7 +46,8 @@ Quorum {
       off on automatic path, gone, changed, revoked, insufficient material evidence, lock/helper error or unavailable recheck => withdraw historical support
       rebuild decision from independent current inputs, excluding historical-only details even in the receipt; retain independently supported current facts
       reroute independent current inputs under original controls before resynthesis; retain prior launches, charge fresh work to the remaining cap; disclose any degraded review. Recheck observes one instant, never promises continuous validity or erases chat history
-    memoryUseReceipt: report matched, returned, omitted/truncated, scope and exact ID, task-local disposition/reason, current evidence checked, final check and actual fresh fallback
+    memoryUseReceipt: report scope and exact ID, task-local disposition/reason, current evidence checked, final check and actual fresh fallback
+      project reads/selections: report matched, returned, omitted and truncated as supplied. Global exact read: found, missing, denied or actual error; omit search counts, retain returned source/admission provenance
       report off/empty/error truthfully, no fabricated comparisons or verification; omit unnecessary private content. Helper success proves retrieval alone
     forget: node helper forget --project-root ABS (--id UUID | --all)
       explicit exact ID or all-project intent; ambiguous => ask; absent=no-op; preserve unrelated files/settings, no backups

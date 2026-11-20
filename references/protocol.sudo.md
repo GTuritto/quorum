@@ -128,9 +128,9 @@ Quorum {
     requestedExploration=input.exploration; explorationApplied=resolved.explorationActive && finalTier in [mini,full,super]
     full->mini retains applied exploration; final direct => false; option count never implies model/worker diversity
     output gate before final answer, including storageOnly: require concise receipt fields, never omit for brevity or early stop after helper
-    memory-use output gate: for each candidate, including withdrawn records, print original exact ID and scope, disposition and material reason, evidence checked, final helper outcome and actual fallback; report matched/returned/omitted/truncated once. Never repeat a withdrawn claim or label. Verify fields in the final answer.
+    memory-use output gate: for each candidate, including withdrawn records, print original exact ID and scope, disposition and material reason, evidence checked, final helper outcome and actual fallback; report project matched/returned/omitted/truncated once when the helper supplies them. Never repeat a withdrawn claim or label. Verify fields in the final answer.
     pre-save check never satisfies final reliance after forget: require a new exact-ID helper call after the last forget before reporting a dependent recommendation
-    global read receipt: include initial source scope and sourceState, destination, global ID and admission ID when returned; if a final read was denied say so without inventing new source/admission data
+    exact global read receipt: report found, missing, denied or actual error without search counts. Include initial source scope and sourceState, destination, global ID and admission ID when returned; if a final read was denied say so without inventing new source/admission data
     compact receipt: requestedTier->tier; launchedCandidates+launchedReviewers=totalLaunches; maxWorkers; modelProvenance; explorationApplied; reductions/fallback if any
     render resolved enum/numeric values, never variable names/placeholders; requestedTier=user's requested level or auto, not inferred actual tier
     storageOnly: actualTier=direct, launches=0+0=0, modelProvenance=none, explorationApplied=false; retain requestedTier + configured cap; precede with actual project + helper outcome/ID
@@ -194,10 +194,12 @@ Quorum {
     }
     result, plan, finalTier = evaluateFromRouting(resolved,ledger)
     // executeDirect still follows Authority, Goals, Decision, Recovery, MemoryGate and ProvenanceReceipt
-    ensureCurrentSupport(boundary) { // updates the current result, plan, finalTier and check receipts in this run
+    ensureCurrentSupport(boundary, captureOutcome?) { // updates the current result, plan, finalTier and check receipts in this run
       if (no history influenced the current route or decision, or already rebuilt independently) return
-      check = recheckExactRecords(reliance, Memory); checks += {boundary,check}
-      if (any required check failed) {
+      observedOff = relied on automatic project selection && (captureOutcome?.status?.enabled == false || captureOutcome?.capture?.reason == "off")
+      // An observed off withdraws this support for the rest of the request, even if the project is re-enabled. Do not reacquire it.
+      check = observedOff ? captureOutcome : recheckExactRecords(reliance, Memory); checks += {boundary,check}
+      if (observedOff || any required check failed) {
         resolved = independentCurrentInputs(resolved) // retain original requested controls and authorized current facts; discard all historical support and dependent signals
         markWithdrawn(reliance,check) // preserve original IDs, assessments and receipts
         result, plan, finalTier = evaluateFromRouting(resolved,ledger,plan)
@@ -215,14 +217,19 @@ Quorum {
         memoryReceipts += saveExplicitFinalDecisionAfterSynthesis(result,memory)
       }
     }
-    ensureCurrentSupport("final delivery") // required after all explicit mutations, before capture/persistence/user output
-    if (selection or applicable explicit retrieval attempted) memoryReceipts += memoryUseReceipt(candidates,reliance,checks) // include failures and fresh fallback
+    captureOutcome = none
     if (!memory.hasExplicitOperation && eligibleFinalDecision(result) && unambiguousHostSelectedProject) {
       requireRead("references/memory.sudo.md") // before settings lookup; missing module skips capture with disclosure
-      memoryReceipts += captureIfEnabled(result,resolved,Memory)
+      ensureCurrentSupport("before capture") // a dependent write needs its own exact check
+      if (eligibleFinalDecision(result)) {
+        captureOutcome = captureIfEnabled(result,resolved,Memory) // actual status and, only when enabled, the one capture result
+        memoryReceipts += captureOutcome
+      }
     }
+    ensureCurrentSupport("final delivery", captureOutcome) // after all operations; withdraw on observed off or perform a fresh exact check before dependent persistence/output
+    if (selection or applicable explicit retrieval attempted) memoryReceipts += memoryUseReceipt(candidates,reliance,checks) // include failures and fresh fallback
     // storageOnly operations run once; resolve mutually exclusive timing flags; never silently drop an explicit operation
-    capsule = summarizeWithoutHiddenReasoning(result,goal)
+    capsule = summarizeWithoutHiddenReasoning(result,goal,memoryReceipts)
     if (ArtifactStore exists && authorizedPersistence) ArtifactStore.save(capsule)
     if (goal exists) GoalStore.update(capsule)
     // Before sending even a one-line status answer, verify the rendered result includes the mandatory compact receipt.

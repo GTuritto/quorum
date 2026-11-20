@@ -99,7 +99,7 @@ A reference mentioned in text is not proof that its content was read.
 | Direct memory status/read/save/forget | Memory loads before scope/order resolution or helper use. No deliberation; explicit operations work while off, helper output plus receipt. |
 | On/off with a decision, or forget before/after a decision | Correct operation order, execute each once, no automatic recapture on any explicit memory request. |
 | Routine answer while capture is enabled | No memory module or settings lookup in a fresh context; no capture. |
-| Meaningful Direct decision with capture off/on | In 0.2.2, load memory before bounded project select. Off returns no content. On validates candidates before routing and rechecks any reliance before eligible capture. |
+| Meaningful Direct decision with capture off/on | In 0.2.2, load memory before bounded project select. Off returns no content. On validates candidates before routing. Check exact support before eligible capture. Process the actual status/capture outcome before final reliance, receipt and capsule persistence. |
 | Ambiguous project | Skip automatic selection and capture without guessing ancestors. Explicit memory work loads its rules and clarifies scope before helper use. |
 | Missing core/adapter | Stop affected execution and disclose; never reconstruct rules from model familiarity. |
 | Missing deliberation/Full module | Ordinary Direct still works. Requested affected feature stops with disclosure; no successful Mini/Full claim or unauthorized dispatch. |

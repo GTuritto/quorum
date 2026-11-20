@@ -84,7 +84,8 @@ Ask Quorum to remember a decision, or say “Turn Quorum memory on for this proj
 to enable automatic capture. In 0.2.2, an existing or new project-on setting also
 allows bounded selection of saved local decisions for eligible tasks. Quorum
 checks a candidate against current evidence and rechecks the exact record before
-relying on it. Project memory defaults off. Explicit historical reads still
+capture and final delivery. If capture observes memory off, Quorum discards
+historical support for that decision. Project memory defaults off. Explicit historical reads still
 work while off, and a request for fresh evaluation skips automatic selection.
 
 Global memory is a separate local store, off by default. Access stays explicit

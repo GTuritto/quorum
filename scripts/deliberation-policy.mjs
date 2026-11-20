@@ -250,6 +250,24 @@ export function executionReceipt(plan, launches, options = {}) {
       panel.launches.some((recorded, i) => !sameAttempt(recorded, launches[i])))) {
     throw new RangeError('Completed panel ledger cannot be reset, reordered or reassigned');
   }
+  if (panel) {
+    launches = launches.map((completion, index) => {
+      const recorded = panel.launches[index];
+      if (recorded.valid !== undefined) return recorded;
+      const attempt = { ...completion };
+      for (const field of ['model', 'effort', 'provider']) {
+        const verified = `${field}Verified`;
+        if (recorded[verified] === true) {
+          attempt[field] = recorded[field];
+          attempt[verified] = true;
+        }
+      }
+      for (const field of ['isolated', 'fresh', 'independent']) {
+        if (typeof recorded[field] === 'boolean') attempt[field] = recorded[field];
+      }
+      return attempt;
+    });
+  }
   const { launched, valid, accepted } = participation(panel?.plan ?? plan, launches,
     panel ? new Set(panel.independentResultIds) : undefined);
   const reasons = [...plan.reasons];

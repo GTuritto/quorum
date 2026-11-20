@@ -14,7 +14,9 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - Activate bounded automatic selection for relevant decisions in projects with
   memory on, including projects using an existing on setting.
 - Check historical candidates against current evidence and recheck the exact
-  record before relying on it. Report applicability, coverage, and any fallback
+  record before dependent capture and final delivery. If capture observes
+  project memory off, rebuild from current inputs before persisting or returning
+  the decision. Report applicability, coverage, and any fallback
   to fresh evaluation.
 - Keep global access explicit and exact-ID based, including the admission check
   before relying on a requested global record.

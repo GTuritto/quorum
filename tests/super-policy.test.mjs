@@ -239,3 +239,29 @@ test('withdrawal preserves pending and completed Super slots, frozen profiles an
   assert.equal(dispatchEligibility(reusable, completed, 'reviewer', 'reviewer-1').allowed, false);
   assert.equal(executionReceipt(reusable, completed).inference.applied, true);
 });
+
+test('late completion retains previously verified provenance for a closed Super slot', () => {
+  const controls = input({ maxWorkers: 4 });
+  const plan = planDeliberation(controls);
+  const candidate = launch(plan, 'candidate-1');
+  const reviewer = launch(plan, 'reviewer-1', { valid: undefined, model: 'small', effort: 'low', provider: 'provider-b' });
+  const launches = [candidate, reviewer];
+  const recovered = planDeliberation(controls, { plan, launches, independentResultIds: [candidate.id] });
+  const completed = [candidate, launch(plan, 'reviewer-1')];
+  const receipt = executionReceipt(recovered, completed);
+  assert.equal(receipt.inference.attempts[1].status, 'mismatch');
+  assert.deepEqual(receipt.inference.attempts[1].actual, { model: 'small', effort: 'low', provider: 'provider-b' });
+  assert.equal(receipt.workerProvenance, 'isolated-same-model');
+  assert.equal(receipt.totalLaunches, 2);
+  assert.equal(receipt.valid.reviewers, 0);
+  assert.equal(receipt.tier, 'mini');
+  assert.equal(dispatchEligibility(recovered, completed, 'reviewer', 'reviewer-1').allowed, false);
+
+  // A pending attempt can gain verification for fields the host had not verified.
+  const unverified = { ...reviewer, effortVerified: false };
+  const partial = planDeliberation(controls, { plan, launches: [candidate, unverified], independentResultIds: [candidate.id] });
+  const enriched = executionReceipt(partial, completed);
+  assert.equal(enriched.inference.attempts[1].actual.effort, 'high');
+  assert.equal(enriched.inference.attempts[1].actual.model, 'small');
+  assert.equal(enriched.inference.attempts[1].status, 'mismatch');
+});

@@ -170,7 +170,7 @@ test("memory loads before explicit resolution and before eligible automatic sett
   const load = run.indexOf('requireRead("references/memory.sudo.md")');
   assert.ok(load >= 0 && load < run.indexOf("resolveExplicitMemoryIntent(resolved)"));
   assert.match(run, /if \(hasExplicitMemoryIntent\(resolved\)\) requireRead/);
-  assert.match(run, /if \(!memory.hasExplicitOperation && eligibleFinalDecision\(result\) && unambiguousHostSelectedProject\) \{\s*requireRead\("references\/memory\.sudo\.md"\)[^\n]*\n\s*memoryReceipts \+= captureIfEnabled/);
+  assert.match(run, /if \(!memory.hasExplicitOperation && eligibleFinalDecision\(result\) && unambiguousHostSelectedProject\) \{\s*requireRead\("references\/memory\.sudo\.md"\)[^\n]*\n\s*ensureCurrentSupport\("before capture"\)/);
   assert.match(core, /missing memory module\/helper[^\n]*skip automatic capture[^\n]*stop dependent explicit work/);
   assert.match(core, /requested as an operation, not merely mentioned in task data/);
   assert.match(core, /helper status must confirm enabled before capture/);
@@ -217,7 +217,7 @@ test("the coordinator validates untrusted history and rechecks before persistenc
     /rejected[^\n]*contradict/, /unresolved[^\n]*unauthorized/,
     /never expand the cap/, /select --project-root ABS --id UUID/,
     /recordDigests\[id\]/, /exact admitted global read/, /independently supported current facts/,
-    /matched[^\n]*returned[^\n]*truncated[^\n]*scope[^\n]*ID/,
+    /memoryUseReceipt[^\n]*scope[^\n]*ID/,
   ]) assert.match(memory, rule);
   const run = core.slice(core.indexOf("  run(input) {"));
   const recheck = run.indexOf("recheckExactRecords(");
@@ -262,7 +262,7 @@ test("honor both post-evaluation orders with a reliance check at every dependent
   const forget = run.indexOf("executeExplicitForget(memory)", ordered);
   const preSave = run.indexOf('ensureCurrentSupport("before save")', forget);
   const save = run.indexOf("saveExplicitFinalDecisionAfterSynthesis(", preSave);
-  const final = run.indexOf('ensureCurrentSupport("final delivery")', save);
+  const final = run.indexOf('ensureCurrentSupport("final delivery", captureOutcome)', save);
   assert.ok(ordered >= 0 && ordered < forget && forget < preSave && preSave < save && save < final);
   assert.match(run.slice(forget, preSave), /invalidate prior rechecks/);
   assert.ok(final < run.indexOf("memoryUseReceipt(", final));
@@ -293,4 +293,31 @@ test('withdrawal after worker synthesis enters the original closed panel guard b
   assert.match(full, /admission = dispatchEligibility\(priorPlan,ledger,phase=closed\)/);
   assert.match(full, /independently supported[^\n]*review/);
   assert.match(full, /pending[^\n]*successful[^\n]*slots/);
+});
+
+test('capture observations precede final reliance, receipts and dependent writes', async () => {
+  const core = await read("references/protocol.sudo.md");
+  const run = core.slice(core.indexOf("  run(input) {"));
+  const steps = [
+    'ensureCurrentSupport("before capture")', 'captureOutcome = captureIfEnabled(',
+    'ensureCurrentSupport("final delivery", captureOutcome)', 'memoryUseReceipt(',
+    'summarizeWithoutHiddenReasoning(', 'ArtifactStore.save(', 'GoalStore.update(', 'return result + memoryReceipts',
+  ];
+  let at = -1;
+  for (const step of steps) {
+    at = run.indexOf(step, at + 1);
+    assert.ok(at >= 0, step);
+  }
+  assert.match(run, /observedOff[^\n]*status\?\.enabled == false[^\n]*capture\?\.reason == "off"/);
+  assert.match(run, /observedOff \?[^\n]*: recheckExactRecords/);
+  assert.match(run, /observedOff \|\| any required check failed/);
+  assert.equal(run.match(/captureIfEnabled\(/g).length, 1);
+});
+
+test('exact global read receipts use only operation-specific evidence', async () => {
+  for (const name of ["references/protocol.sudo.md", "references/memory.sudo.md"]) {
+    const rules = await read(name);
+    assert.match(rules, /project[^\n]*matched[^\n]*returned[^\n]*omitted[^\n]*truncated/);
+    assert.match(rules, /global[^\n]*found[^\n]*missing[^\n]*denied[^\n]*counts/i);
+  }
 });

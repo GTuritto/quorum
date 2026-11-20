@@ -295,6 +295,9 @@ backfilled. Explicit save, retrieve, and forget still work while off and never
 enable capture.
 Forget preserves the setting, so future decisions may be captured again while on.
 A request containing an explicit memory operation does not also auto-capture.
+When the capture status or the capture itself reports off, Quorum withdraws
+automatically selected support for the rest of that decision. It reassesses
+current evidence before saving a recovery capsule or delivering the answer.
 
 Selection uses one nonempty task query of up to 256 characters or an exact
 project record ID. The helper returns up to five matches by default (limit
